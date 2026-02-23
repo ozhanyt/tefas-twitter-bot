@@ -64,10 +64,11 @@ def generate_fund_list_html(funds, is_inflow=True, sort_mode='tl'):
 def generate_investor_list_html(funds):
     html = ""
     for f in funds:
-        inv_pct = f.get('inv_pct', 0)
+        inv_pct = f.get('inv_change_pct', 0)   # was: 'inv_pct' — field is saved as 'inv_change_pct' by data_fetcher
         inv_change = f.get('inv_change', 0)
         val_class = "trend-up" if inv_change >= 0 else "trend-down"
         inv_str = f"{inv_change:+d}"
+        pct_prefix = "+" if inv_pct >= 0 else ""
         
         name = f.get('name', f.get('fund_name', ''))
         
@@ -79,7 +80,7 @@ def generate_investor_list_html(funds):
             </div>
             <div class="f-right">
                 <div class="val {val_class}">{inv_str} Kişi</div>
-                <div class="pct {val_class}">({format_pct(inv_pct)})</div>
+                <div class="pct {val_class}">({pct_prefix}{format_pct(inv_pct)})</div>
             </div>
         </li>
         """
