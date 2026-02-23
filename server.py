@@ -1,0 +1,543 @@
+import http.server
+import socketserver
+import subprocess
+import os
+import urllib.parse
+import json
+
+PORT = 8080
+DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+class WebServerHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=DIRECTORY, **kwargs)
+
+    def do_GET(self):
+        if self.path == '/filled_index':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.send_header('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https:;")
+            self.end_headers()
+            path = os.path.join(DIRECTORY, "template", "filled_index.html")
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.wfile.write(b"HTML not generated yet.")
+            return
+
+        # Serve an index page if requesting root
+        if self.path == '/':
+            CONFIG_FILE = os.path.join(DIRECTORY, "dashboard_config.json")
+            db_config = {}
+            if os.path.exists(CONFIG_FILE):
+                try:
+                    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                        db_config = json.load(f)
+                except: pass
+            
+            def_canvas_width = db_config.get("canvas_width", 1600)
+            def_item_font_size = db_config.get("item_font_size", 25)
+            def_period_font_size = db_config.get("period_font_size", 25)
+            def_tracked_funds = db_config.get("tracked_funds", "TLY, DFI, PHE")
+            def_bg_url = db_config.get("bg_url", "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1964")
+            def_main_title = db_config.get("main_title", "GÜNLÜK TEFAS ÖZETİ")
+            def_sub_title = db_config.get("subtitle", "Paranın Yönü Nereye?")
+            def_grid_cols = db_config.get("grid_cols", 2)
+            def_tracked_grid_cols = db_config.get("tracked_grid_cols", 1)
+            def_wm_anchor = db_config.get("watermark_anchor", "bottom")
+            def_sort_mode = db_config.get("sort_mode", "tl")
+            def_pred_title = db_config.get("pred_title", "Getiri Tahmini")
+            
+            # Position defaults
+            def_pos = db_config.get("positions", {})
+            def_sections = db_config.get("sections", ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked"])
+            
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.send_header('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https:;")
+            self.end_headers()
+            
+            html = """
+            <!DOCTYPE html>
+            <html lang="tr">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>TEFAS İnfografik Üretici</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #121214; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; padding: 60px 20px; }
+                    .card { background: #1c1c1e; padding: 50px; border-radius: 30px; text-align: left; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 60px rgba(0,0,0,0.6); width: 1000px; max-width: 95%; }
+                    h1 { margin-top: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.5px; text-align: center; width: 100%; margin-bottom: 8px; }
+                    .subtitle-p { color: #8e8e93; font-size: 17px; margin-bottom: 45px; text-align: center; width: 100%; }
+                    
+                    .dashboard-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px; }
+                    .section-title { font-size: 13px; color: #8e8e93; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 18px; display: block; }
+                    .input-group { margin-bottom: 25px; }
+                    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #8e8e93; }
+                    input, select, textarea { width: 100%; background: #000; border: 1px solid #1c1c1e; border-radius: 12px; padding: 14px 18px; color: #fff; font-size: 16px; box-sizing: border-box; transition: all 0.2s; outline: none; }
+                    input:focus { border-color: #0a84ff; }
+                    
+                    /* Grid inputs */
+                    .pos-grid-container { display: flex; flex-direction: column; gap: 12px; background: #000; padding: 20px; border-radius: 18px; }
+                    .pos-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: center; }
+                    .pos-label { font-size: 14px; color: #fff; }
+                    .pos-input { padding: 10px; text-align: center; font-weight: 700; }
+                    
+                    /* Categorized filters */
+                    .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; background: #000; padding: 20px; border-radius: 18px; }
+                    .cat-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #fff; }
+                    .cat-item input { width: auto; margin: 0; }
+                    
+                    /* Predictions area */
+                    .pred-section { margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 30px; }
+                    .pred-table { display: flex; flex-direction: column; gap: 10px; }
+                    .pred-header { display: grid; grid-template-columns: 1fr 1.2fr 2fr; gap: 10px; font-size: 12px; color: #8e8e93; font-weight: 700; padding-bottom: 5px; }
+                    .pred-row { display: grid; grid-template-columns: 1fr 1.2fr 2fr; gap: 10px; }
+                    .pred-row input { padding: 10px 14px; font-size: 14px; }
+                    
+                    /* Action buttons */
+                    .button-group { display: flex; flex-direction: row; gap: 18px; margin-top: 50px; justify-content: center; width: 100%; }
+                    .action-btn { background: #333; color: #fff; border: none; padding: 18px 30px; border-radius: 18px; font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.2s; min-width: 250px; display: flex; align-items: center; gap: 12px; justify-content: center; }
+                    .action-btn:hover { background: #444; transform: translateY(-3px); }
+                    .action-btn:active { transform: translateY(0); }
+                    .action-btn.green { background: #32d74b; color: #fff; }
+                    .action-btn.green:hover { background: #28cd41; }
+                    
+                    .loader { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid white; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; display: none; }
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    
+                    .status-msg { margin-top: 30px; text-align: center; min-height: 24px; font-size: 15px; font-weight: 500; }
+                    .hidden { display: none; }
+                    hr { border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 30px 0; }
+                    
+                    /* Download link style */
+                    .result-link { display: none; margin-top: 20px; color: #0a84ff; text-decoration: none; font-weight: 600; font-size: 16px; border: 2px solid #0a84ff; padding: 12px 24px; border-radius: 12px; transition: all 0.2s; }
+                    .result-link:hover { background: #0a84ff; color: #fff; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <h1>TEFAS İnfografik Üretici</h1>
+                    <p class="subtitle-p">Profesyonel veri görselleştirme paneli.</p>
+
+                    <div class="dashboard-grid">
+                        <!-- Column 1 -->
+                        <div class="dash-column">
+                            <span class="section-title">TEMEL BİLGİLER</span>
+                            
+                            <div class="input-group">
+                                <label for="trackedFunds">Takipteki Fon Kodları:</label>
+                                <input type="text" id="trackedFunds" value="{{TRACKED_FUNDS}}" placeholder="TLY, DFI, PHE">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="bgUrl">Arka Plan Resmi URL:</label>
+                                <input type="text" id="bgUrl" value="{{BG_URL}}" placeholder="URL linkini buraya yapıştırın...">
+                            </div>
+
+                            <div class="input-group">
+                                <label><input type="checkbox" id="headerShowMain" checked style="width:auto; margin-right:8px;"> Ana Başlık:</label>
+                                <input type="text" id="mainTitle" value="{{MAIN_TITLE}}" placeholder="GÜNLÜK TEFAS ÖZETİ">
+                            </div>
+
+                            <div class="input-group">
+                                <label><input type="checkbox" id="headerShowSub" checked style="width:auto; margin-right:8px;"> Alt Başlık:</label>
+                                <input type="text" id="subtitle" value="{{SUB_TITLE}}" placeholder="Paranın Yönü Nereye?">
+                            </div>
+
+                            <span class="section-title" style="margin-top:20px;">YERLEŞİM VE SIRALAMA</span>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="input-group">
+                                    <label for="gridCols">Ana Sütun:</label>
+                                    <input type="number" id="gridCols" value="{{GRID_COLS}}" min="1" max="4">
+                                </div>
+                                <div class="input-group">
+                                    <label for="sortMode">Sıralama Modu:</label>
+                                    <select id="sortMode">
+                                        <option value="tl" {{SEL_SORT_TL}}>Birim Bazlı (₺)</option>
+                                        <option value="pct" {{SEL_SORT_PCT}}>Getiri Bazlı (%)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="input-group">
+                                    <label for="canvasWidth">Tuval Genişliği (px):</label>
+                                    <input type="number" id="canvasWidth" value="{{CANVAS_WIDTH}}" step="100">
+                                </div>
+                                <div class="input-group">
+                                    <label for="trackedGridCols">Takip Izgarası:</label>
+                                    <input type="number" id="trackedGridCols" value="{{TRACKED_GRID_COLS}}" min="1" max="4">
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="input-group">
+                                    <label for="itemFontSize">Liste Font (px):</label>
+                                    <input type="number" id="itemFontSize" value="{{ITEM_FONT_SIZE}}">
+                                </div>
+                                <div class="input-group">
+                                    <label for="periodFontSize">Etiket Font (px):</label>
+                                    <input type="number" id="periodFontSize" value="{{PERIOD_FONT_SIZE}}">
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="watermarkAnchor">Filigran Konumu:</label>
+                                <select id="watermarkAnchor">
+                                    <option value="bottom" {{SEL_WM_BOTTOM}}>En Alt Orta</option>
+                                    <option value="inflows" {{SEL_WM_INFLOWS}}>Para Girişi Altı</option>
+                                    <option value="outflows" {{SEL_WM_OUTFLOWS}}>Para Çıkışı Altı</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Column 2 -->
+                        <div class="dash-column">
+                            <span class="section-title">BÖLÜM KONUMLARI (SATIR, SÜTUN)</span>
+                            
+                            <div class="pos-grid-container">
+                                <!-- Multi-position rows -->
+                                {{POS_ROWS_HTML}}
+                            </div>
+
+                            <span class="section-title" style="margin-top:35px;">LİDERLER KATEGORİ FİLTRESİ</span>
+                            <div class="cat-grid" id="categoryFilters">
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Hisse Senedi" checked> Hisse</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Değişken" checked> Değişken</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Karma" checked> Karma</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Fon Sepeti" checked> Fon Sepeti</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Borçlanma Araçları" checked> Borçlanma</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="K.Maden" checked> K.Maden</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Katılım" checked> Katılım</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Para Piy."> Para Piy.</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Serbest (Genel)" checked> Serbest (Genel)</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Serbest (P.Piy)"> Serbest (P.Piy)</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Serbest (Döviz)"> Serbest (Döviz)</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Serbest (K.Vade)"> Serbest (K.Vade)</label></div>
+                                <div class="cat-item"><label><input type="checkbox" class="cat-chk" value="Serbest (Katılım)"> Serbest (Katılım)</label></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pred-section">
+                        <span class="section-title">GETİRİ TAHMİNLERİ</span>
+                        <div class="input-group" style="margin-bottom:15px;">
+                            <label for="predTitle">Bölüm Başlığı:</label>
+                            <input type="text" id="predTitle" value="{{PRED_SECTION_TITLE}}" placeholder="Örn: Getiri Tahmini / Gün Ortası Tahmini">
+                        </div>
+                        <div class="pred-table">
+                            <div class="pred-header">
+                                <span>FON KODU</span>
+                                <span>GETİRİ (%)</span>
+                                <span>AÇIKLAMA (OPSİYONEL)</span>
+                            </div>
+                            {{PRED_ROWS}}
+                        </div>
+                        <div class="input-group" style="margin-top:15px; display:flex; align-items:center; gap:10px;">
+                            <input type="checkbox" id="chkPredOnly" style="width:auto; margin:0;">
+                            <label for="chkPredOnly" style="margin:0;">Sadece Tahmin Paylaş (Ortalı Mod)</label>
+                        </div>
+                    </div>
+
+                    <div class="status-msg" id="status"></div>
+                    <center>
+                        <a id="resultLink" href="/infographic.png" target="_blank" class="result-link">Görseli Yeni Sekmede Aç</a>
+                    </center>
+
+                    <div class="button-group">
+                        <button id="btn-preds" class="action-btn green" onclick="generate('predictions')">
+                            <div class="loader"></div>
+                            <span class="btn-text">Tahmin Paylaş</span>
+                        </button>
+                        <button id="btn-daily" class="action-btn" onclick="generate('daily')">
+                            <div class="loader"></div>
+                            <span class="btn-text">Günlük İnfografik</span>
+                        </button>
+                        <button id="btn-weekly" class="action-btn" onclick="generate('weekly')">
+                            <div class="loader"></div>
+                            <span class="btn-text">Haftalık İnfografik</span>
+                        </button>
+                        <button id="btn-monthly" class="action-btn" onclick="generate('monthly')">
+                            <div class="loader"></div>
+                            <span class="btn-text">Aylık İnfografik</span>
+                        </button>
+                    </div>
+                </div>
+
+                <script>
+                    function generate(period) {
+                        const btnId = period === 'predictions' ? 'btn-preds' : 'btn-' + period;
+                        const btn = document.getElementById(btnId);
+                        const loader = btn.querySelector('.loader');
+                        const status = document.getElementById('status');
+                        const resultLink = document.getElementById('resultLink');
+                        
+                        const bgUrl = document.getElementById('bgUrl').value;
+                        const sections = [];
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions'].forEach(s => {
+                            const chk = document.getElementById('chk-' + s);
+                            if (chk && chk.checked) sections.push(s);
+                        });
+                        
+                        // Prediction Rows
+                        const predictions = [];
+                        for (let i=0; i<10; i++) {
+                            const codeVal = document.getElementById('pred-code-' + i).value;
+                            if (codeVal) {
+                                predictions.push({
+                                    code: codeVal,
+                                    val: document.getElementById('pred-val-' + i).value,
+                                    desc: document.getElementById('pred-desc-' + i).value
+                                });
+                            }
+                        }
+
+                        let finalSections = sections;
+                        if (period === 'predictions' || document.getElementById('chkPredOnly').checked) {
+                            finalSections = ['predictions'];
+                        }
+                        // Note: predictions is ONLY included if the user explicitly checks the 'chk-predictions' checkbox.
+                        // It is NOT auto-added based on prediction data presence.
+
+
+                        const selectedCats = Array.from(document.querySelectorAll('.cat-chk:checked')).map(c => c.value);
+                        
+                        const positions = {};
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions'].forEach(s => {
+                            const chk = document.getElementById('chk-' + s);
+                            if (chk) {
+                                const r = document.getElementById('pos-' + s + '-r').value;
+                                const c = document.getElementById('pos-' + s + '-c').value;
+                                positions[s] = r + ',' + c;
+                            }
+                        });
+
+                        // UI State
+                        btn.disabled = true;
+                        loader.style.display = 'block';
+                        status.textContent = period.toUpperCase() + " görseli hazırlanıyor... Lütfen bekleyin.";
+                        status.style.color = "#8e8e93";
+                        resultLink.style.display = "none";
+
+                        fetch('/api/generate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                period: period === 'predictions' ? 'daily' : period,
+                                tracked_funds: document.getElementById('trackedFunds').value,
+                                bg_url: bgUrl,
+                                sections: finalSections.join(','),
+                                selected_categories: selectedCats.join(','),
+                                grid_cols: document.getElementById('gridCols').value,
+                                sort_mode: document.getElementById('sortMode').value,
+                                canvas_width: document.getElementById('canvasWidth').value,
+                                tracked_grid_cols: document.getElementById('trackedGridCols').value,
+                                item_font_size: document.getElementById('itemFontSize').value,
+                                period_font_size: document.getElementById('periodFontSize').value,
+                                watermark_anchor: document.getElementById('watermarkAnchor').value,
+                                main_title: document.getElementById('mainTitle').value,
+                                subtitle: document.getElementById('subtitle').value,
+                                header_show_main: document.getElementById('headerShowMain').checked,
+                                header_show_sub: document.getElementById('headerShowSub').checked,
+                                pred_title: document.getElementById('predTitle').value,
+                                predictions: predictions,
+                                positions: positions
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            btn.disabled = false;
+                            loader.style.display = 'none';
+                            if (data.success) {
+                                status.textContent = "Görsel başarıyla oluşturuldu!";
+                                status.style.color = "#32d74b";
+                                resultLink.style.display = "inline-block";
+                                // Automatically open in new tab
+                                window.open('/infographic.png?v=' + Date.now(), '_blank');
+                                
+                                // Provide HTML review link
+                                const htmlLink = document.createElement('a');
+                                htmlLink.href = '/filled_index';
+                                htmlLink.target = '_blank';
+                                htmlLink.innerText = ' [HTML Olarak İncele]';
+                                htmlLink.style.cssText = 'color: #32d74b; margin-left:15px; text-decoration:none; font-weight:600;';
+                                status.appendChild(htmlLink);
+                            } else {
+                                status.textContent = "HATA: " + data.error;
+                                status.style.color = "#ff453a";
+                            }
+                        })
+                        .catch(err => {
+                            btn.disabled = false;
+                            loader.style.display = 'none';
+                            status.textContent = "Bağlantı hatası: " + err;
+                            status.style.color = "#ff453a";
+                        });
+                    }
+                </script>
+            </body>
+            </html>
+            """
+            
+            # Position Rows HTML Generation
+            pos_labels = {
+                "inflows": "Para Girişi", "outflows": "Para Çıkışı", 
+                "cat_in": "Kategori Giriş", "cat_out": "Kategori Çıkış",
+                "inv_in": "Yatırımcı Giriş", "inv_out": "Yatırımcı Kaybı",
+                "tracked": "Takipteki Fonlar", "predictions": "Tahmin"
+            }
+            pos_rows_html = ""
+            for key, label in pos_labels.items():
+                r, c = pget(key, "R"), pget(key, "C")
+                is_checked = "checked" if key in def_sections else ""
+                pos_rows_html += f"""
+                <div class="pos-row">
+                    <div class="pos-label">
+                        <input type="checkbox" id="chk-{key}" {is_checked} style="width:auto; margin-right:8px;"> {label}
+                    </div>
+                    <input type="number" id="pos-{key}-r" class="pos-input" value="{r}">
+                    <input type="number" id="pos-{key}-c" class="pos-input" value="{c}">
+                </div>
+                """
+            html = html.replace("{{POS_ROWS_HTML}}", pos_rows_html)
+
+            # Prediction rows
+            pred_rows_html = ""
+            saved_preds = db_config.get("predictions", [])
+            for i in range(10):
+                p = saved_preds[i] if i < len(saved_preds) else {"code": "", "val": "", "desc": ""}
+                pred_rows_html += f"""
+                <div class="pred-row">
+                    <input type="text" id="pred-code-{i}" value="{p.get('code', '')}" placeholder="KOD">
+                    <input type="text" id="pred-val-{i}" value="{p.get('val', '')}" placeholder="%2,5">
+                    <input type="text" id="pred-desc-{i}" value="{p.get('desc', '')}" placeholder="Açıklama...">
+                </div>
+                """
+            html = html.replace("{{PRED_ROWS}}", pred_rows_html)
+
+            # Standard replacements
+            html = html.replace("{{TRACKED_FUNDS}}", str(def_tracked_funds))
+            html = html.replace("{{BG_URL}}", str(def_bg_url))
+            html = html.replace("{{MAIN_TITLE}}", str(def_main_title))
+            html = html.replace("{{SUB_TITLE}}", str(def_sub_title))
+            html = html.replace("{{GRID_COLS}}", str(def_grid_cols))
+            html = html.replace("{{TRACKED_GRID_COLS}}", str(def_tracked_grid_cols))
+            html = html.replace("{{CANVAS_WIDTH}}", str(def_canvas_width))
+            html = html.replace("{{ITEM_FONT_SIZE}}", str(def_item_font_size))
+            html = html.replace("{{PERIOD_FONT_SIZE}}", str(def_period_font_size))
+            html = html.replace("{{PRED_SECTION_TITLE}}", str(def_pred_title))
+            
+            html = html.replace("{{SEL_WM_BOTTOM}}", "selected" if def_wm_anchor == "bottom" else "")
+            html = html.replace("{{SEL_WM_INFLOWS}}", "selected" if def_wm_anchor == "inflows" else "")
+            html = html.replace("{{SEL_WM_OUTFLOWS}}", "selected" if def_wm_anchor == "outflows" else "")
+            html = html.replace("{{SEL_SORT_TL}}", "selected" if def_sort_mode == "tl" else "")
+            html = html.replace("{{SEL_SORT_PCT}}", "selected" if def_sort_mode == "pct" else "")
+
+            self.wfile.write(html.encode("utf-8"))
+            return
+        
+        return super().do_GET()
+
+    def do_POST(self):
+        if self.path == '/api/generate':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            req_data = json.loads(post_data.decode('utf-8'))
+            
+            # Extract and map fields
+            period = req_data.get('period', 'daily')
+            tracked_funds = req_data.get('tracked_funds', 'TLY, DFI, PHE')
+            bg_url = req_data.get('bg_url', '')
+            sections = req_data.get('sections', 'inflows,outflows,cat_in,cat_out,inv_in,inv_out,tracked')
+            selected_categories = req_data.get('selected_categories', 'Hisse Senedi,Değişken,Karma,Borçlanma Araçları,Katılım,Para Piy.,Serbest')
+            grid_cols = req_data.get('grid_cols', '2')
+            sort_mode = req_data.get('sort_mode', 'tl')
+            canvas_width = req_data.get('canvas_width', 1600)
+            tracked_grid_cols = req_data.get('tracked_grid_cols', '1')
+            item_font_size = req_data.get('item_font_size', 25)
+            period_font_size = req_data.get('period_font_size', 25)
+            watermark_anchor = req_data.get('watermark_anchor', 'bottom')
+            main_title_custom = req_data.get('main_title', '')
+            subtitle_custom = req_data.get('subtitle', '')
+            header_show_main = req_data.get('header_show_main', True)
+            header_show_sub = req_data.get('header_show_sub', True)
+            pred_title = req_data.get('pred_title', 'Getiri Tahmini')
+            predictions = req_data.get('predictions', [])
+            positions = req_data.get('positions', {})
+            
+            # Save settings
+            CONFIG_FILE = os.path.join(DIRECTORY, "dashboard_config.json")
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump({
+                    "tracked_funds": tracked_funds, "bg_url": bg_url,
+                    "main_title": main_title_custom, "subtitle": subtitle_custom,
+                    "grid_cols": int(grid_cols), "sort_mode": sort_mode,
+                    "canvas_width": int(canvas_width), "tracked_grid_cols": int(tracked_grid_cols),
+                    "item_font_size": int(item_font_size), "period_font_size": int(period_font_size),
+                    "watermark_anchor": watermark_anchor, "header_show_main": header_show_main,
+                    "header_show_sub": header_show_sub, "pred_title": pred_title,
+                    "predictions": predictions, "positions": positions
+                }, f)
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            
+            try:
+                # 1. Run Data Fetcher
+                # Ensure data fetcher runs if any Tefas section is requested
+                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked"]
+                section_list = sections.split(",")
+                needs_data = any(s in section_list for s in tefas_sections)
+                
+                if needs_data:
+                    print(f"Running data fetcher for {period}...")
+                    subprocess.run(["python", os.path.join(DIRECTORY, "data_fetcher.py"), period, tracked_funds, selected_categories, "--sort", sort_mode], check=True)
+                
+                # Write runtime config
+                runtime_path = os.path.join(DIRECTORY, "runtime_config.json")
+                print(f"DEBUG: Sections to generate: {sections}")
+                print(f"DEBUG: Background URL: {bg_url}")
+                print(f"DEBUG: Writing runtime config to {runtime_path} with encoding utf-8")
+                with open(runtime_path, "w", encoding="utf-8") as f:
+                    json.dump({
+                        "bg_url": bg_url, "sections": sections.split(","),
+                        "grid_cols": int(grid_cols), "tracked_grid_cols": int(tracked_grid_cols),
+                        "watermark_anchor": watermark_anchor, "main_title": main_title_custom,
+                        "subtitle": subtitle_custom, "header_show_main": header_show_main,
+                        "header_show_sub": header_show_sub, "pred_title": pred_title,
+                        "canvas_width": int(canvas_width), "item_font_size": int(item_font_size),
+                        "period_font_size": int(period_font_size), "positions": positions,
+                        "predictions": predictions
+                    }, f, ensure_ascii=False)
+                
+                # 2. Run Image Generator
+                print("Running image generator...")
+                subprocess.run(["python", os.path.join(DIRECTORY, "image_generator.py")], check=True)
+                
+                self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+            except Exception as e:
+                print(f"Error: {e}")
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode('utf-8'))
+            return
+
+def pget(key, sub):
+    CONFIG_FILE = os.path.join(DIRECTORY, "dashboard_config.json")
+    if not os.path.exists(CONFIG_FILE): return "1"
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            cfg = json.load(f)
+            pos = cfg.get("positions", {}).get(key, "1,1")
+            return pos.split(",")[0 if sub=="R" else 1]
+    except: return "1"
+
+def start_server():
+    with socketserver.TCPServer(("", PORT), WebServerHandler) as httpd:
+        print(f"Server started at http://localhost:{PORT}")
+        httpd.serve_forever()
+
+if __name__ == "__main__":
+    start_server()

@@ -1,0 +1,603 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEFAS Günlük Özeti</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        :root {
+
+            /* BG_VAR */
+            --item-font-size: {
+                    {
+                    ITEM_FONT_SIZE
+                }
+            }
+
+            px;
+
+            --period-font-size: {
+                    {
+                    PERIOD_FONT_SIZE
+                }
+            }
+
+            px;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .infographic-container {
+            width: {
+                    {
+                    CANVAS_WIDTH
+                }
+            }
+
+            px;
+            min-height: 1100px;
+            padding: 80px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            position: relative;
+            background-color: #000;
+            overflow: hidden;
+            background-image: url('{{BG_URL}}');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .infographic-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(29, 29, 31, 0.4), rgba(0, 0, 0, 0.4));
+            backdrop-filter: blur(0px);
+            z-index: 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 35px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .main-title {
+            font-size: 72px;
+            font-weight: 800;
+            letter-spacing: -3px;
+            color: #fff;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 34px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 12px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+
+        .date-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 18px 36px;
+            border-radius: 28px;
+            font-size: 34px;
+            font-weight: 700;
+            color: #fff;
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .content-grid {
+            display: grid;
+
+            grid-template-columns: repeat({
+                    {
+                    GRID_COLS
+                }
+            }
+
+            , 1fr);
+        gap: 45px;
+        position: relative;
+        z-index: 5;
+        width: 100%;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 44px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Predict Only Mode Overrides */
+        .pred-only-layout .header {
+            display: none !important;
+        }
+
+        .pred-only-layout .content-grid {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            min-height: 800px;
+        }
+
+        .pred-only-layout .predictions {
+            grid-column: auto !important;
+            max-width: 900px !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+            padding: 60px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 60px !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        }
+
+        .pred-only-layout .pred-item {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 34px !important;
+            padding: 30px 45px !important;
+        }
+
+        .pred-only-layout .pred-fund {
+            font-size: 36px !important;
+        }
+
+        .pred-only-layout .pred-val {
+            font-size: 36px !important;
+        }
+
+        .pred-only-layout .pred-title-text {
+            font-size: 52px !important;
+            letter-spacing: -2px !important;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .header-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header h2 {
+            font-size: 34px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .period-label {
+            font-size: var(--period-font-size);
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .fund-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .fund-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            /* Darker background as requested */
+            padding: 22px 32px;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .f-left {
+            display: flex;
+            flex-direction: column;
+            /* Stacked layout */
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .f-code {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 800;
+            font-size: var(--item-font-size);
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .f-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.45);
+            max-width: 450px;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .f-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            text-align: right;
+        }
+
+        .f-val {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: var(--item-font-size);
+            font-weight: 700;
+        }
+
+        .f-pct {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .trend-up {
+            color: #30D158;
+        }
+
+        .trend-down {
+            color: #FF453A;
+        }
+
+        /* Investor section value divs - covers all trend class combinations */
+        .val,
+        .pct,
+        .val.trend-up,
+        .val.trend-down,
+        .val.pct-up,
+        .val.pct-down,
+        .pct.trend-up,
+        .pct.trend-down,
+        .pct.pct-up,
+        .pct.pct-down {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: var(--item-font-size) !important;
+            font-weight: 700;
+        }
+
+        /* Prediction Grid */
+        .pred-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .pred-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 22px 32px;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .pred-fund {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 800;
+            font-size: var(--item-font-size);
+            color: #fff;
+        }
+
+        .pred-val {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: var(--item-font-size);
+            font-weight: 700;
+        }
+
+        .pred-desc {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-top: 4px;
+        }
+
+        /* Tracked Funds Cards (Resim 3 style) */
+        .tracked-list {
+            display: grid;
+            gap: 25px;
+        }
+
+        .tracked-card {
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 35px;
+            padding: 35px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .t-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .t-code {
+            font-size: 42px;
+            font-weight: 800;
+            color: #fff;
+            display: block;
+        }
+
+        .t-price {
+            font-size: var(--item-font-size) !important;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .t-stats-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .t-stat-block {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .t-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .t-val-main,
+        .t-val-main.trend-up,
+        .t-val-main.trend-down {
+            font-size: var(--item-font-size) !important;
+            font-weight: 700;
+        }
+
+        .t-val-sub,
+        .t-val-sub.trend-up,
+        .t-val-sub.trend-down {
+            font-size: calc(var(--item-font-size) * 0.75) !important;
+            font-weight: 600;
+        }
+
+        .watermark-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: auto;
+            padding-top: 40px;
+            z-index: 10;
+        }
+
+        .watermark {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 12px 30px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .watermark span {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .x-logo {
+            width: 24px;
+            height: 24px;
+            color: #fff;
+        }
+
+        .footer-note {
+            width: 100%;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 10;
+        }
+
+        .footer-note p {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.3);
+            line-height: 1.5;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="infographic-container {{LAYOUT_MODE_CLASS}}">
+        <div class="infographic-overlay"></div>
+
+        <header class="header">
+            <div class="header-left">
+                <h1 class="main-title {{SHOW_MAIN}}">{{TITLE}}</h1>
+                <p class="subtitle {{SHOW_SUB}}">{{SUBTITLE}}</p>
+            </div>
+            <div class="header-right">
+                <div class="date-badge">
+                    <span class="date-text">{{DATE}}</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-grid" style="/* DYNAMIC_GRID_STYLE */">
+            <!-- inflows -->
+            <div class="card glass-card top-inflows {{SHOW_INFLOWS}}" style="/* POS_INFLOWS */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon">📈</div>
+                    <h2>Para Girişi Liderleri <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_INFLOWS_HTML}}</ul>
+            </div>
+
+            <!-- outflows -->
+            <div class="card glass-card top-outflows {{SHOW_OUTFLOWS}}" style="/* POS_OUTFLOWS */">
+                <div class="card-header">
+                    <div class="header-icon outflow-icon">📉</div>
+                    <h2>Para Çıkışı Liderleri <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_OUTFLOWS_HTML}}</ul>
+            </div>
+
+            <!-- cat_in -->
+            <div class="card glass-card cat-in {{SHOW_CAT_IN}}" style="/* POS_CAT_IN */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(255,255,255,0.1); color:#fff;">📊</div>
+                    <h2>Kategori Para Girişi <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_CAT_IN_HTML}}</ul>
+            </div>
+
+            <!-- cat_out -->
+            <div class="card glass-card cat-out {{SHOW_CAT_OUT}}" style="/* POS_CAT_OUT */">
+                <div class="card-header">
+                    <div class="header-icon outflow-icon" style="background:rgba(255,255,255,0.1); color:#fff;">📉</div>
+                    <h2>Kategori Para Çıkışı <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_CAT_OUT_HTML}}</ul>
+            </div>
+
+            <!-- inv_in -->
+            <div class="card glass-card inv-in {{SHOW_INV_IN}}" style="/* POS_INV_IN */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(10,132,255,0.2); color:#0A84FF;">👤+
+                    </div>
+                    <h2>Yeni Yatırımcı Girişi <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_INV_IN_HTML}}</ul>
+            </div>
+
+            <!-- inv_out -->
+            <div class="card glass-card inv-out {{SHOW_INV_OUT}}" style="/* POS_INV_OUT */">
+                <div class="card-header">
+                    <div class="header-icon outflow-icon">👤-</div>
+                    <h2>Yatırımcı Kaybı <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_INV_OUT_HTML}}</ul>
+            </div>
+
+            <div class="card glass-card predictions {{SHOW_PREDICTIONS}}" style="/* POS_PREDICTIONS */">
+                <div class="card-header">
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <div class="header-icon inflow-icon" style="background:rgba(255,214,10,0.2); color:#FFD60A;">🔮
+                        </div>
+                        <h2>{{PRED_TITLE}}</h2>
+                    </div>
+                    <div class="pred-only-date" style="display:none;">{{DATE}}</div>
+                </div>
+                <div class="pred-grid">{{PREDICTIONS_HTML}}</div>
+            </div>
+        </div>
+
+        <!-- tracked -->
+        <div class="card glass-card tracked-funds {{SHOW_TRACKED}}" style="/* POS_TRACKED */">
+            <div class="card-header">
+                <div class="header-icon inflow-icon" style="background:rgba(10,132,255,0.2); color:#0A84FF;">🎯</div>
+                <h2>Takipteki Fonlar <span class="period-label">({{PERIOD_TYPE_LABEL}})</span></h2>
+            </div>
+            <div class="tracked-list" style="/* DYNAMIC_TRACKED_GRID */">{{TRACKED_FUNDS_HTML}}</div>
+        </div>
+
+        <!-- footer area -->
+        <div class="watermark-container">
+            <div class="watermark">
+                <svg class="x-logo" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"
+                        fill="currentColor" />
+                </svg>
+                <span>@sevketozhan</span>
+            </div>
+        </div>
+        <div class="footer-note {{SHOW_FOOTER}}">
+            <p>{{FOOTER_NOTE}}</p>
+        </div>
+    </div>
+
+    <style>
+        /* In pred-only layout, show the date and align it with the card header */
+        .pred-only-layout .predictions .card-header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .pred-only-layout .pred-only-date {
+            display: block !important;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+    </style>
+</body>
+
+</html>

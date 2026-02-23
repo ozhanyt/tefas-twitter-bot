@@ -1,0 +1,32 @@
+# Generated output files
+infographic.png
+template/filled_index.html
+
+# Runtime data — regenerated each run, not needed in repo
+data.json
+runtime_config.json
+
+# Dashboard config — user-specific local settings
+dashboard_config.json
+
+# Test / scratch files
+funds_test.txt
+funds_test2.txt
+test_funds.py
+test_funds2.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Virtual environment
+venv/
+env/
+.env
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
