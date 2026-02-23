@@ -82,19 +82,20 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     logging.info(f"Screening funds for {period_type} period (Sort: {sort_mode})...")
     
     # Mapping of categories to keywords for granular filtering
+    # Keys here MUST match the dashboard checkbox values exactly
     cat_to_keywords = {
         "Hisse Senedi": ["Hisse Senedi", "Hisse"],
         "Değişken": ["Değişken", "Degisken"],
         "Karma": ["Karma"],
         "Fon Sepeti": ["Fon Sepeti"],
         "Borçlanma Araçları": ["Borçlanma Araçları", "Borclanma Aracları", "Tahvil", "Bono"],
-        "Kıymetli Madenler": ["Altın", "Gümüş", "Kıymetli Maden", "Altin", "Gumus"],
+        "K.Maden": ["Altın", "Gümüş", "Kıymetli Maden", "Altin", "Gumus"],  # dashboard sends 'K.Maden'
         "Katılım": ["Katılım", "Katilim"],
-        "Para Piyasası": ["Para Piyasası", "Para Piyasasi"],
-        "Serbest": ["Serbest"],
-        "Serbest (Para Piyasası)": ["Serbest", "Para Piyasası"],
+        "Para Piy.": ["Para Piyasası", "Para Piyasasi"],  # dashboard sends 'Para Piy.'
+        "Serbest (Genel)": ["Serbest"],        # dashboard sends 'Serbest (Genel)'
+        "Serbest (P.Piy)": ["Serbest", "Para Piyasası"],  # dashboard sends 'Serbest (P.Piy)'
         "Serbest (Döviz)": ["Serbest", "Döviz"],
-        "Serbest (Kısa Vadeli)": ["Serbest", "Kısa Vadeli"],
+        "Serbest (K.Vade)": ["Serbest", "Kısa Vadeli"],  # dashboard sends 'Serbest (K.Vade)'
         "Serbest (Katılım)": ["Serbest", "Katılım"]
     }
     
@@ -123,11 +124,16 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
             fname_n = normalize(r['name'])
             effective_cat = ""
             if "Serbest" in ftype:
-                if any(x in fname_n for x in ["para piyasasi", "p.piy"]): effective_cat = "Serbest (Para Piyasası)"
+                # Map to dashboard checkbox values
+                if any(x in fname_n for x in ["para piyasasi", "p.piy"]): effective_cat = "Serbest (P.Piy)"
                 elif any(x in fname_n for x in ["doviz", "yabanci", "eurobond"]): effective_cat = "Serbest (Döviz)"
-                elif any(x in fname_n for x in ["kisa vadeli", "k.vade"]): effective_cat = "Serbest (Kısa Vadeli)"
+                elif any(x in fname_n for x in ["kisa vadeli", "k.vade"]): effective_cat = "Serbest (K.Vade)"
                 elif "katilim" in fname_n: effective_cat = "Serbest (Katılım)"
-                else: effective_cat = "Serbest"
+                else: effective_cat = "Serbest (Genel)"  # FIX: was 'Serbest', dashboard sends 'Serbest (Genel)'
+            elif any(x in ftype for x in ["Kıymetli Maden", "Altın", "Gümüş"]):
+                effective_cat = "K.Maden"  # FIX: was 'Kıymetli Madenler', dashboard sends 'K.Maden'
+            elif "Para Piyasası" in ftype:
+                effective_cat = "Para Piy."  # FIX: was 'Para Piyasası', dashboard sends 'Para Piy.'
             else:
                 for cat_name in all_cats:
                     if cat_name in ftype:
