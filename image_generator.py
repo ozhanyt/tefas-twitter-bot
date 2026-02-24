@@ -190,26 +190,34 @@ def generate_tracked_html(tracked_dict, period_label):
         <div class="tracked-card">
             <div class="t-header">
                 <span class="t-code">{code}</span>
-                <span class="t-price">Fiyat: {price_str}</span>
+                <span class="t-price">Fiyat: <span class="t-price-value">{price_str}</span></span>
             </div>
             <div class="t-stats-grid">
                 <div class="t-stat-block">
                     <span class="t-label">{period_label} Giriş</span>
-                    <span class="t-val-main {flow_class}">{flow_str}</span>
-                    <span class="t-val-sub {flow_class}">{flow_pct_str}</span>
+                    <div class="t-values-row">
+                        <span class="t-val-main {flow_class}">{flow_str}</span>
+                        <span class="t-val-sub {flow_class}">{flow_pct_str}</span>
+                    </div>
                 </div>
                 <div class="t-stat-block">
                     <span class="t-label">{period_label} Getiri</span>
-                    <span class="t-val-main {ret_class}">{ret_str}</span>
+                    <div class="t-values-row">
+                        <span class="t-val-main {ret_class}">{ret_str}</span>
+                    </div>
                 </div>
                 <div class="t-stat-block">
                     <span class="t-label">Yeni Kişi ({period_label})</span>
-                    <span class="t-val-main {inv_class}">{inv_str}</span>
-                    <span class="t-val-sub {inv_class}">{inv_pct_str}</span>
+                    <div class="t-values-row">
+                        <span class="t-val-main {inv_class}">{inv_str}</span>
+                        <span class="t-val-sub {inv_class}">{inv_pct_str}</span>
+                    </div>
                 </div>
                 <div class="t-stat-block">
                     <span class="t-label">Toplam Büyüklük</span>
-                    <span class="t-val-main">{size_str}</span>
+                    <div class="t-values-row">
+                        <span class="t-val-main">{size_str}</span>
+                    </div>
                 </div>
             </div>
         </div>

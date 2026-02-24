@@ -57,10 +57,10 @@
             px;
             /* Force 4:5 aspect ratio height on mobile retina standard */
             height: 1350px;
-            padding: 10px 14px;
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             position: relative;
             background-color: #000;
             overflow: hidden;
@@ -136,16 +136,30 @@
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 10px 14px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 14px 18px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
             display: flex;
             flex-direction: column;
             gap: 8px;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         }
 
         /* Predict Only Mode Overrides */
@@ -162,19 +176,36 @@
         }
 
         .pred-only-layout .predictions {
+            position: relative;
             grid-column: auto !important;
             max-width: 900px !important;
             width: 100% !important;
             margin: 0 auto !important;
             padding: 30px 40px !important;
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 40px !important;
-            border: 2px solid rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            background: rgba(255, 255, 255, 0) !important;
+            border-radius: 24px !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+            overflow: hidden;
+        }
+
+        .pred-only-layout .predictions::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         }
 
         .pred-only-layout .pred-item {
-            background: rgba(0, 0, 0, 0.4) !important;
-            border-radius: 20px !important;
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
             padding: 24px 36px !important;
         }
 
@@ -205,19 +236,36 @@
         }
 
         .portfolio-only-layout .portfolio-diff {
+            position: relative;
             grid-column: auto !important;
             max-width: 900px !important;
             width: 100% !important;
             margin: 0 auto !important;
             padding: 30px 40px !important;
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 40px !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            background: rgba(255, 255, 255, 0) !important;
+            border-radius: 24px !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+            overflow: hidden;
+        }
+
+        .portfolio-only-layout .portfolio-diff::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         }
 
         .portfolio-only-layout .portfolio-diff .fund-item {
-            background: rgba(0, 0, 0, 0.4) !important;
-            border-radius: 20px !important;
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
             padding: 16px 24px !important;
             display: flex !important;
             justify-content: space-between !important;
@@ -237,7 +285,6 @@
             text-transform: none !important;
             font-weight: 700 !important;
             max-width: 500px !important;
-            /* give it plenty of space */
         }
 
         .portfolio-only-layout .portfolio-diff .f-val {
@@ -262,7 +309,7 @@
         .header-icon {
             width: 28px;
             height: 28px;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -296,11 +343,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 0, 0, 0.2);
-            /* Darker background as requested */
-            padding: 6px 10px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 8px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             transition: all 0.3s ease;
         }
 
@@ -396,10 +442,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.04);
             padding: 22px 32px;
-            border-radius: 32px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .pred-fund {
@@ -421,74 +467,113 @@
             margin-top: 4px;
         }
 
-        /* Tracked Funds Cards (Resim 3 style) */
+        /* Tracked Funds Cards — Premium Glass Morphism */
         .tracked-list {
             display: grid;
-            gap: 8px;
+            gap: 16px;
         }
 
         .tracked-card {
-            background: rgba(0, 0, 0, 0.25);
-            border-radius: 16px;
-            padding: 16px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 14px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .tracked-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         }
 
         .t-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
         }
 
         .t-code {
-            font-size: 32px;
-            font-weight: 800;
+            font-size: 38px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
             color: #fff;
-            display: block;
+            line-height: 1.2;
         }
 
         .t-price {
-            font-size: calc(var(--item-font-size) * 0.9) !important;
-            font-weight: 700;
-            color: #fff;
-            margin-top: 2px;
-            display: block;
+            font-size: calc(var(--item-font-size) * 0.7) !important;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: right;
+        }
+
+        .t-price-value {
+            color: #F59E0B;
+            font-feature-settings: 'tnum';
         }
 
         .t-stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px 16px;
+            gap: 8px;
         }
 
         .t-stat-block {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 10px 12px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
 
         .t-label {
-            font-size: 14px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 2px;
+        }
+
+        .t-values-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .t-val-main,
         .t-val-main.trend-up,
         .t-val-main.trend-down {
-            font-size: calc(var(--item-font-size) * 1.1) !important;
-            font-weight: 800;
+            font-size: calc(var(--item-font-size) * 0.85) !important;
+            font-weight: 700;
+            font-feature-settings: 'tnum';
+            letter-spacing: -0.02em;
+            line-height: 1.2;
         }
 
         .t-val-sub,
         .t-val-sub.trend-up,
         .t-val-sub.trend-down {
-            font-size: calc(var(--item-font-size) * 0.8) !important;
-            font-weight: 700;
+            font-size: calc(var(--item-font-size) * 0.55) !important;
+            font-weight: 600;
         }
 
         .watermark-container {
