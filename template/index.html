@@ -55,11 +55,12 @@
             }
 
             px;
-            min-height: 1100px;
-            padding: 80px 60px;
+            /* Force 4:5 aspect ratio height on mobile retina standard */
+            height: 1350px;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
-            gap: 50px;
+            gap: 12px;
             position: relative;
             background-color: #000;
             overflow: hidden;
@@ -84,38 +85,38 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 35px;
+            padding-bottom: 8px;
             position: relative;
             z-index: 10;
         }
 
         .main-title {
-            font-size: 72px;
+            font-size: 38px;
             font-weight: 800;
-            letter-spacing: -3px;
+            letter-spacing: -1px;
             color: #fff;
             line-height: 1;
             text-transform: uppercase;
         }
 
         .subtitle {
-            font-size: 34px;
+            font-size: 20px;
             color: rgba(255, 255, 255, 0.6);
-            margin-top: 12px;
+            margin-top: 4px;
             font-weight: 500;
             letter-spacing: -0.5px;
         }
 
         .date-badge {
             background: rgba(255, 255, 255, 0.1);
-            padding: 18px 36px;
-            border-radius: 28px;
-            font-size: 34px;
+            padding: 8px 16px;
+            border-radius: 14px;
+            font-size: 20px;
             font-weight: 700;
             color: #fff;
-            backdrop-filter: blur(30px);
+            backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         }
 
         .content-grid {
@@ -128,7 +129,7 @@
             }
 
             , 1fr);
-        gap: 45px;
+        gap: 12px;
         position: relative;
         z-index: 5;
         width: 100%;
@@ -136,15 +137,15 @@
 
         .glass-card {
             background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 44px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 10px 14px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 8px;
         }
 
         /* Predict Only Mode Overrides */
@@ -156,7 +157,8 @@
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            min-height: 800px;
+            min-height: auto;
+            flex: 1;
         }
 
         .pred-only-layout .predictions {
@@ -164,16 +166,16 @@
             max-width: 900px !important;
             width: 100% !important;
             margin: 0 auto !important;
-            padding: 60px !important;
+            padding: 30px 40px !important;
             background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 60px !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 40px !important;
+            border: 2px solid rgba(255, 255, 255, 0.2) !important;
         }
 
         .pred-only-layout .pred-item {
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 34px !important;
-            padding: 30px 45px !important;
+            background: rgba(0, 0, 0, 0.4) !important;
+            border-radius: 20px !important;
+            padding: 24px 36px !important;
         }
 
         .pred-only-layout .pred-fund {
@@ -198,7 +200,8 @@
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
-            min-height: 800px;
+            min-height: auto;
+            flex: 1;
         }
 
         .portfolio-only-layout .portfolio-diff {
@@ -206,72 +209,87 @@
             max-width: 900px !important;
             width: 100% !important;
             margin: 0 auto !important;
-            padding: 60px !important;
+            padding: 30px 40px !important;
             background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 60px !important;
+            border-radius: 40px !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
         .portfolio-only-layout .portfolio-diff .fund-item {
-            background: rgba(255, 255, 255, 0.08) !important;
-            border-radius: 34px !important;
-            padding: 30px 45px !important;
+            background: rgba(0, 0, 0, 0.4) !important;
+            border-radius: 20px !important;
+            padding: 16px 24px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 12px !important;
+        }
+
+        /* The last item doesn't need a margin bottom */
+        .portfolio-only-layout .portfolio-diff .fund-item:last-child {
+            margin-bottom: 0 !important;
         }
 
         .portfolio-only-layout .portfolio-diff .f-name {
-            font-size: 32px !important;
+            font-size: 26px !important;
             letter-spacing: -0.5px !important;
             color: #fff !important;
             text-transform: none !important;
             font-weight: 700 !important;
+            max-width: 500px !important;
+            /* give it plenty of space */
         }
 
         .portfolio-only-layout .portfolio-diff .f-val {
-            font-size: 42px !important;
+            font-size: 34px !important;
+            line-height: 1 !important;
         }
 
         .portfolio-only-layout .portfolio-diff .f-pct {
-            font-size: 32px !important;
+            font-size: 24px !important;
         }
+
+        /* Tracked Only Mode Overrides */
+
 
         .card-header {
             display: flex;
             align-items: center;
-            gap: 20px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 2px;
         }
 
         .header-icon {
-            width: 56px;
-            height: 56px;
+            width: 28px;
+            height: 28px;
             background: rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 14px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .card-header h2 {
-            font-size: 34px;
+            font-size: 20px;
             font-weight: 700;
             color: #fff;
             letter-spacing: -0.5px;
         }
 
         .period-label {
-            font-size: var(--period-font-size);
+            font-size: calc(var(--period-font-size) * 0.65);
             color: rgba(255, 255, 255, 0.4);
             font-weight: 500;
-            margin-left: 8px;
+            margin-left: 4px;
         }
 
         .fund-list {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 4px;
         }
 
         .fund-item {
@@ -280,8 +298,8 @@
             align-items: center;
             background: rgba(0, 0, 0, 0.2);
             /* Darker background as requested */
-            padding: 22px 32px;
-            border-radius: 32px;
+            padding: 6px 10px;
+            border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
         }
@@ -292,23 +310,29 @@
             /* Stacked layout */
             align-items: flex-start;
             gap: 4px;
+            flex: 1;
+            min-width: 0;
+            padding-right: 12px;
         }
 
         .f-code {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 800;
-            font-size: var(--item-font-size);
+            font-size: calc(var(--item-font-size) * 1.3);
             color: #fff;
             letter-spacing: -0.5px;
         }
 
         .f-name {
-            font-size: 16px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.45);
-            max-width: 450px;
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.75);
+            width: 100%;
             text-transform: uppercase;
             letter-spacing: 0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .f-right {
@@ -317,18 +341,19 @@
             align-items: flex-end;
             gap: 2px;
             text-align: right;
+            flex-shrink: 0;
         }
 
         .f-val {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: var(--item-font-size);
+            font-size: calc(var(--item-font-size) * 1.4);
             font-weight: 700;
         }
 
         .f-pct {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
+            font-size: 26px;
+            font-weight: 800;
         }
 
         .trend-up {
@@ -356,7 +381,7 @@
         .pct.pct-down,
         .pct.trend-neutral {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: var(--item-font-size) !important;
+            font-size: calc(var(--item-font-size) * 1.25) !important;
             font-weight: 700;
         }
 
@@ -399,49 +424,49 @@
         /* Tracked Funds Cards (Resim 3 style) */
         .tracked-list {
             display: grid;
-            gap: 25px;
+            gap: 8px;
         }
 
         .tracked-card {
             background: rgba(0, 0, 0, 0.25);
-            border-radius: 35px;
-            padding: 35px;
+            border-radius: 16px;
+            padding: 16px 20px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 8px;
         }
 
         .t-header {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 15px;
+            padding-bottom: 8px;
         }
 
         .t-code {
-            font-size: 42px;
+            font-size: 32px;
             font-weight: 800;
             color: #fff;
             display: block;
         }
 
         .t-price {
-            font-size: var(--item-font-size) !important;
+            font-size: calc(var(--item-font-size) * 0.9) !important;
             font-weight: 700;
             color: #fff;
-            margin-top: 5px;
+            margin-top: 2px;
             display: block;
         }
 
         .t-stats-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 16px;
         }
 
         .t-stat-block {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
 
         .t-label {
@@ -455,15 +480,15 @@
         .t-val-main,
         .t-val-main.trend-up,
         .t-val-main.trend-down {
-            font-size: var(--item-font-size) !important;
-            font-weight: 700;
+            font-size: calc(var(--item-font-size) * 1.1) !important;
+            font-weight: 800;
         }
 
         .t-val-sub,
         .t-val-sub.trend-up,
         .t-val-sub.trend-down {
-            font-size: calc(var(--item-font-size) * 0.75) !important;
-            font-weight: 600;
+            font-size: calc(var(--item-font-size) * 0.8) !important;
+            font-weight: 700;
         }
 
         .watermark-container {
@@ -471,24 +496,25 @@
             justify-content: center;
             width: 100%;
             margin-top: auto;
-            padding-top: 40px;
+            padding-top: 10px;
+            padding-bottom: 2px;
             z-index: 10;
         }
 
         .watermark {
             background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(20px);
-            padding: 12px 30px;
-            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            padding: 6px 16px;
+            border-radius: 40px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 6px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
         }
 
         .watermark span {
-            font-size: 24px;
+            font-size: 14px;
             font-weight: 700;
             color: #fff;
         }
@@ -592,8 +618,7 @@
             <div class="card glass-card predictions {{SHOW_PREDICTIONS}}" style="/* POS_PREDICTIONS */">
                 <div class="card-header">
                     <div style="display:flex; align-items:center; gap:20px;">
-                        <div class="header-icon inflow-icon" style="background:rgba(255,214,10,0.2); color:#FFD60A;">🔮
-                        </div>
+
                         <h2>{{PRED_TITLE}}</h2>
                     </div>
                     <div class="pred-only-date" style="display:none;">{{DATE}}</div>
@@ -643,12 +668,18 @@
             width: 100%;
         }
 
+        .pred-only-layout .predictions h2 {
+            font-size: 38px !important;
+            font-weight: 800 !important;
+            margin-bottom: 20px !important;
+        }
+
         .pred-only-layout .pred-only-date {
             display: block !important;
             background: rgba(255, 255, 255, 0.1);
-            padding: 10px 24px;
+            padding: 12px 28px;
             border-radius: 20px;
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             white-space: nowrap;
             flex-shrink: 0;

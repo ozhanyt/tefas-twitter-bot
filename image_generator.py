@@ -148,13 +148,13 @@ def generate_portfolio_diff_html(diffs_dict, config):
         weight_str = f"%{w:.2f}".replace(".", ",")
         
         html += f"""
-        <li class="fund-item" style="display:flex; justify-content:space-between; padding: 20px 30px; margin-bottom: 15px; background: rgba(0,0,0,0.4); border-radius: 20px;">
-            <div class="f-left" style="font-size: 1.4em; font-weight: 600;">
-                <span class="f-name" style="color: #fff;">{asset}</span>
+        <li class="fund-item portfolio-fund-item">
+            <div class="f-left">
+                <span class="f-name">{asset}</span>
             </div>
-            <div class="f-right" style="text-align: right; display: flex; flex-direction: column; gap: 5px;">
-                <span class="f-val" style="color: #fff; font-size: 1.6em; font-weight: 800;">{weight_str}</span>
-                <span class="f-pct {trend_class}" style="font-size: 1.2em; font-weight: 700;">{diff_str}</span>
+            <div class="f-right">
+                <span class="f-val">{weight_str}</span>
+                <span class="f-pct {trend_class}">{diff_str}</span>
             </div>
         </li>
         """
@@ -424,9 +424,10 @@ async def main():
     # Launch Playwright
     async with async_playwright() as p:
         browser = await p.chromium.launch()
-        # Set canvas width
-        c_width = config.get("canvas_width", 1280)
-        page = await browser.new_page(viewport={"width": c_width, "height": 1000})
+        # Set canvas width to 1080 for Twitter 4:5 Native Portrait
+        c_width = config.get("canvas_width", 1080)
+        # device_scale_factor=2 applies retina (2160x2700 max physical output)
+        page = await browser.new_page(viewport={"width": c_width, "height": 1350}, device_scale_factor=2)
         
         await page.goto(f"file:///{output_html_path}")
         

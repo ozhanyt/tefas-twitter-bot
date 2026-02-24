@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Apple Liquid Glass UI (2025)</title>
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div class="container container--inline">
+  <div class="glass-container glass-container--rounded glass-container--large">
+    <div class="glass-filter"></div>
+    <div class="glass-overlay"></div>
+    <div class="glass-specular"></div>
+    <div class="glass-content glass-content--inline">
+
+      <div class="player">
+        <div class="player__thumb">
+          <img class="player__img" src='https://www.jqueryscript.net/dummy/1.jpg' alt=''>
+          <div class="player__legend">
+            <h3 class="player__legend__title">All Of Me</h3>
+            <span class="player__legend__sub-title">Nao</span>
+          </div>
+        </div>
+
+        <div class="player__controls">
+          <div class="player__controls__play">
+            <svg viewBox="0 0 448 512" width="24" title="play">
+              <path fill="#fff" d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z" />
+            </svg>
+          </div>
+
+          <div class="player__controls__ff">
+            <svg viewBox="0 0 448 512" width="24" title="play">
+              <path fill="#fff" d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z" />
+            </svg>
+
+            <svg viewBox="0 0 448 512" width="24" title="play">
+              <path fill="#fff" d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z" />
+            </svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+</div></div>
+
+<div class="container">
+  
+
+  <div class="glass-container">
+    <div class="glass-filter"></div>
+    <div class="glass-overlay"></div>
+    <div class="glass-specular"></div>
+    <div class="glass-content">
+      <a href="#">
+        <img src="finder.webp" alt="Finder" />
+      </a>
+      <a href="#">
+        <img src="map.webp" alt="Maps" />
+      </a>
+      <a href="#">
+        <img src="messages.webp" alt="Messages" />
+      </a>
+      <a href="#">
+        <img src="safari.webp" alt="Safari" />
+      </a>
+      <a href="#">
+        <img src="books.webp" alt="Books" />
+      </a>
+    </div>
+
+    <!-- SVG FILTER DEFINITION -->
+    <svg style="display: none">
+      <filter id="lg-dist" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise" />
+        <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+        <feDisplacementMap in="SourceGraphic" in2="blurred" scale="70" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </svg>
+  </div>
+</div>
+<!-- partial -->
+  
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"ae6d9eb3e9184a35b31ab225d0a10b6e","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

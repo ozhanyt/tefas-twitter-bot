@@ -1,0 +1,20 @@
+
+--- Data for 2026-02-24 ---
+                    asset_name  weight
+2                 Hisse Senedi   81.24
+5         Yabancı Yatırım Fonu    8.34
+0                          BPP    5.57
+4         Varlık İpotek Tahvil    2.92
+1           Borsa Yatırım Fonu    1.62
+3  Vadesiz Mevduat Türk Lirası    0.31
+
+--- Data for 2026-02-23 ---
+                      asset_name  weight
+144                 Hisse Senedi   69.94
+142                          BPP    7.46
+145      Ters Repo Para Piyasası    7.01
+149         Yabancı Yatırım Fonu    7.00
+146                    Ters Repo    4.44
+148         Varlık İpotek Tahvil    2.46
+143           Borsa Yatırım Fonu    1.46
+147  Vadesiz Mevduat Türk Lirası    0.23
