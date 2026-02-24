@@ -140,7 +140,7 @@ def tweet_tracked(data, period):
         ret  = fmt_pct(f.get("period_return_pct", 0))
         flow = fmt_money(f.get("period_flow", 0))
         inv  = f.get("period_investor_change", 0)
-        lines.append(f"  ${code}  Getiri: {ret}  Giriş: {flow}  Yatırımcı: {inv:+d}")
+        lines.append(f"  #{code}  Getiri: {ret}  Giriş: {flow}  Yatırımcı: {inv:+d}")
 
     lines.append("\n📊 Detaylar ve fon büyüklükleri görselde ↓")
     lines.append("#TEFAS #FonYatırımı #TLY #PHE #DFI")
@@ -157,7 +157,7 @@ def tweet_predictions(data):
         code = p.get("code", "")
         val  = p.get("value", "")
         desc = p.get("description", "")
-        entry = f"  ${code}  {val}"
+        entry = f"  #{code}  {val}"
         if desc:
             entry += f"  ({desc})"
         lines.append(entry)

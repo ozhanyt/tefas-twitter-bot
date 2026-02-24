@@ -13,7 +13,39 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
     def do_GET(self):
+
+        # ── /tweet  →  generate tweet text from current data.json ──────────
+        if self.path == '/tweet':
+            try:
+                import sys
+                sys.path.insert(0, DIRECTORY)
+                import importlib
+                import twitter_bot
+                importlib.reload(twitter_bot)   # pick up any edits
+
+                data_path   = os.path.join(DIRECTORY, "data.json")
+                config_path = os.path.join(DIRECTORY, "runtime_config.json")
+
+                with open(data_path,   "r", encoding="utf-8") as f: data   = json.load(f)
+                with open(config_path, "r", encoding="utf-8") as f: config = json.load(f)
+
+                sections   = config.get("sections", ["inflows", "outflows"])
+                tweet_text = twitter_bot.generate_tweet_text(data, sections)
+
+                payload = json.dumps({"tweet_text": tweet_text, "char_count": len(tweet_text)}, ensure_ascii=False)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(payload.encode("utf-8"))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
         if self.path == '/filled_index':
+
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.send_header('Content-Security-Policy', "default-src 'self' 'unsafe-inline' https: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https:;")
@@ -352,19 +384,37 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                             btn.disabled = false;
                             loader.style.display = 'none';
                             if (data.success) {
-                                status.textContent = "Görsel başarıyla oluşturuldu!";
+                                status.textContent = "Görsel başarıyla oluşturuldu! ";
                                 status.style.color = "#32d74b";
                                 resultLink.style.display = "inline-block";
-                                // Automatically open in new tab
                                 window.open('/infographic.png?v=' + Date.now(), '_blank');
                                 
-                                // Provide HTML review link
+                                // HTML review link
                                 const htmlLink = document.createElement('a');
                                 htmlLink.href = '/filled_index';
                                 htmlLink.target = '_blank';
                                 htmlLink.innerText = ' [HTML Olarak İncele]';
                                 htmlLink.style.cssText = 'color: #32d74b; margin-left:15px; text-decoration:none; font-weight:600;';
                                 status.appendChild(htmlLink);
+
+                                // X Share button
+                                const xBtn = document.createElement('button');
+                                xBtn.innerText = '𝕏 Paylaş';
+                                xBtn.style.cssText = 'margin-left:15px; background:#000; color:#fff; border:none; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:700; cursor:pointer; vertical-align:middle;';
+                                xBtn.onclick = function() {
+                                    fetch('/tweet')
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            if (d.error) { alert('Tweet oluşturulamadı: ' + d.error); return; }
+                                            const modal = document.getElementById('tweet-modal');
+                                            document.getElementById('tweet-preview-text').value = d.tweet_text;
+                                            document.getElementById('tweet-char-count').textContent = d.char_count + ' / 280 karakter';
+                                            modal.style.display = 'flex';
+                                        })
+                                        .catch(e => alert('Hata: ' + e));
+                                };
+                                status.appendChild(xBtn);
+
                             } else {
                                 status.textContent = "HATA: " + data.error;
                                 status.style.color = "#ff453a";
@@ -378,6 +428,29 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         });
                     }
                 </script>
+
+                <!-- Tweet Preview Modal -->
+                <div id="tweet-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center;">
+                    <div style="background:#15202b; border-radius:20px; padding:30px; width:560px; max-width:95vw; color:#fff; font-family:sans-serif; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <svg width="24" height="24" viewBox="0 0 1200 1227" fill="white"><path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163Z"/></svg>
+                            <strong style="font-size:18px;">Tweet Önizleme</strong>
+                        </div>
+                        <textarea id="tweet-preview-text" style="width:100%; height:200px; background:#192734; color:#fff; border:1px solid #38444d; border-radius:12px; padding:14px; font-size:14px; line-height:1.6; resize:vertical; box-sizing:border-box;"></textarea>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                            <span id="tweet-char-count" style="color:#8899a6; font-size:13px;"></span>
+                            <div style="display:flex; gap:10px;">
+                                <button onclick="document.getElementById('tweet-modal').style.display='none'" style="background:transparent; color:#fff; border:1px solid #38444d; padding:10px 20px; border-radius:20px; cursor:pointer; font-size:14px;">İptal</button>
+                                <button onclick="
+                                    const txt = document.getElementById('tweet-preview-text').value;
+                                    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(txt), '_blank');
+                                    document.getElementById('tweet-modal').style.display='none';
+                                " style="background:#1d9bf0; color:#fff; border:none; padding:10px 24px; border-radius:20px; cursor:pointer; font-size:14px; font-weight:700;">X'te Gönder →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </body>
             </html>
             """
