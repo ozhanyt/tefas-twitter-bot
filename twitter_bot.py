@@ -69,12 +69,12 @@ def tweet_inflows_outflows(data, period):
     if ins:
         lines.append("🟢 En Fazla Giriş")
         for i, f in enumerate(ins, 1):
-            lines.append(f"  {i}. ${f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
+            lines.append(f"  {i}. #{f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
 
     if outs:
         lines.append("\n🔴 En Fazla Çıkış")
         for i, f in enumerate(outs, 1):
-            lines.append(f"  {i}. ${f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
+            lines.append(f"  {i}. #{f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
 
     lines.append("\n📈 Detaylar görselde ↓")
     lines.append("#TEFAS #FonYatırımı #Borsa #Yatırım")
@@ -88,7 +88,7 @@ def tweet_inflows_only(data, period):
 
     lines = [f"🟢 TEFAS {lbl} Para Girişi Liderleri — {date}\n"]
     for i, f in enumerate(ins, 1):
-        lines.append(f"  {i}. ${f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
+        lines.append(f"  {i}. #{f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
     lines.append("\n#TEFAS #FonYatırımı #Borsa")
     return "\n".join(lines)
 
@@ -100,7 +100,7 @@ def tweet_outflows_only(data, period):
 
     lines = [f"🔴 TEFAS {lbl} Para Çıkışı Liderleri — {date}\n"]
     for i, f in enumerate(outs, 1):
-        lines.append(f"  {i}. ${f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
+        lines.append(f"  {i}. #{f['fund_code']}  {fmt_money(f['net_flow'])}  ({fmt_pct(f['flow_pct'])})")
     lines.append("\n#TEFAS #FonYatırımı #Borsa")
     return "\n".join(lines)
 
@@ -117,13 +117,13 @@ def tweet_investors(data, period):
         lines.append("🟢 En Fazla Yeni Yatırımcı")
         for i, f in enumerate(inv_in, 1):
             pct = fmt_pct(f.get("inv_change_pct", 0))
-            lines.append(f"  {i}. ${f['fund_code']}  {f['inv_change']:+d} kişi  ({pct})")
+            lines.append(f"  {i}. #{f['fund_code']}  {f['inv_change']:+d} kişi  ({pct})")
 
     if inv_out:
         lines.append("\n🔴 En Fazla Yatırımcı Kaybı")
         for i, f in enumerate(inv_out, 1):
             pct = fmt_pct(f.get("inv_change_pct", 0))
-            lines.append(f"  {i}. ${f['fund_code']}  {f['inv_change']:+d} kişi  ({pct})")
+            lines.append(f"  {i}. #{f['fund_code']}  {f['inv_change']:+d} kişi  ({pct})")
 
     lines.append("\n📈 Detaylar görselde ↓")
     lines.append("#TEFAS #FonYatırımı #Yatırımcı")
