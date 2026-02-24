@@ -97,6 +97,10 @@ def generate_predictions_html(predictions):
         # Resim 1 & 2 style: Dark background, stacked code and desc
         val_str = val if "%" in val else f"%{val}"
         
+        # Check if negative for coloring
+        is_negative = "-" in val
+        trend_class = "trend-down" if is_negative else "trend-up"
+        
         html += f"""
         <div class="pred-item fund-item">
             <div class="f-left">
@@ -104,9 +108,55 @@ def generate_predictions_html(predictions):
                 <span class="f-name">{desc}</span>
             </div>
             <div class="f-right">
-                <span class="f-val trend-up">{val_str}</span>
+                <span class="f-val {trend_class}">{val_str}</span>
             </div>
         </div>
+        """
+    return html
+
+def generate_portfolio_diff_html(diffs_dict, config):
+    html = ""
+    if not diffs_dict: return html
+    
+    # Target the specific fund from config
+    target_fund = config.get("portfolio_diff_fund", "PHE").upper()
+    
+    # Fallback to the first available if not found
+    if target_fund not in diffs_dict:
+        target_fund = list(diffs_dict.keys())[0] if diffs_dict else None
+        
+    if not target_fund:
+        return ""
+        
+    data = diffs_dict[target_fund]
+    allocations = data.get("allocations", [])
+    
+    for alloc in allocations:
+        asset = alloc.get("asset", "")
+        w = alloc.get("weight", 0)
+        d = alloc.get("diff", 0)
+        
+        if abs(d) < 0.01:
+            diff_str = "(-)"
+            trend_class = "trend-neutral"
+            sign = ""
+        else:
+            sign = "+" if d > 0 else ""
+            diff_str = f"({sign}%{d:.2f})".replace(".", ",")
+            trend_class = "trend-up" if d > 0 else "trend-down"
+            
+        weight_str = f"%{w:.2f}".replace(".", ",")
+        
+        html += f"""
+        <li class="fund-item" style="display:flex; justify-content:space-between; padding: 20px 30px; margin-bottom: 15px; background: rgba(0,0,0,0.4); border-radius: 20px;">
+            <div class="f-left" style="font-size: 1.4em; font-weight: 600;">
+                <span class="f-name" style="color: #fff;">{asset}</span>
+            </div>
+            <div class="f-right" style="text-align: right; display: flex; flex-direction: column; gap: 5px;">
+                <span class="f-val" style="color: #fff; font-size: 1.6em; font-weight: 800;">{weight_str}</span>
+                <span class="f-pct {trend_class}" style="font-size: 1.2em; font-weight: 700;">{diff_str}</span>
+            </div>
+        </li>
         """
     return html
 
@@ -230,6 +280,8 @@ async def main():
 
     tracked_html = generate_tracked_html(data.get('tracked', {}), period_label) if "tracked" in sections else ""
     
+    portfolio_diff_html = generate_portfolio_diff_html(data.get('allocation_diffs', {}), config) if "portfolio_diff" in sections else ""
+    
     predictions = config.get("predictions", [])
     predictions_html = generate_predictions_html(predictions) if "predictions" in sections else ""
     
@@ -261,15 +313,28 @@ async def main():
     template = template.replace("{{TOP_INV_IN_HTML}}", inv_in_html)
     template = template.replace("{{TOP_INV_OUT_HTML}}", inv_out_html)
     template = template.replace("{{TRACKED_FUNDS_HTML}}", tracked_html)
+    template = template.replace("{{PORTFOLIO_DIFF_HTML}}", portfolio_diff_html)
     template = template.replace("{{PREDICTIONS_HTML}}", predictions_html)
     template = template.replace("{{PRED_TITLE}}", config.get("pred_title", "Getiri Tahmini"))
     
     # Handle layout mode class
-    layout_mode_class = "pred-only-layout" if len(sections) == 1 and "predictions" in sections else "normal-layout"
+    if len(sections) == 1 and "predictions" in sections:
+        layout_mode_class = "pred-only-layout"
+    elif len(sections) == 1 and "portfolio_diff" in sections:
+        layout_mode_class = "portfolio-only-layout"
+        # Override title to be dynamic for portfolio diff
+        diffs = data.get('allocation_diffs', {})
+        if diffs:
+            target_fund = config.get("portfolio_diff_fund", "PHE").upper()
+            if target_fund not in diffs:
+                target_fund = list(diffs.keys())[0] if diffs else ""
+            template = template.replace(config.get("main_title") if config.get("main_title") else title, f"{target_fund} Portföy Dağılımı")
+    else:
+        layout_mode_class = "normal-layout"
     template = template.replace("{{LAYOUT_MODE_CLASS}}", layout_mode_class)
     
     # Conditional Visibility and Positioning
-    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions"]:
+    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions", "portfolio_diff"]:
         placeholder_show = f"{{{{SHOW_{s_name.upper()}}}}}"
         placeholder_pos = f"/* POS_{s_name.upper()} */"
         
@@ -347,6 +412,7 @@ async def main():
     template = template.replace("/* POS_INV_OUT */", get_grid_pos("inv_out"))
     template = template.replace("/* POS_TRACKED */", get_grid_pos("tracked"))
     template = template.replace("/* POS_PREDICTIONS */", get_grid_pos("predictions"))
+    template = template.replace("/* POS_PORTFOLIO_DIFF */", get_grid_pos("portfolio_diff"))
     
     # Watermark position is now handled relatively in index.html
     # We clear the placeholder to avoid CSS errors

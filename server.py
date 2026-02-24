@@ -30,7 +30,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                 with open(config_path, "r", encoding="utf-8") as f: config = json.load(f)
 
                 sections   = config.get("sections", ["inflows", "outflows"])
-                tweet_text = twitter_bot.generate_tweet_text(data, sections)
+                tweet_text = twitter_bot.generate_tweet_text(data, sections, config)
 
                 payload = json.dumps({"tweet_text": tweet_text, "char_count": len(tweet_text)}, ensure_ascii=False)
                 self.send_response(200)
@@ -309,7 +309,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         
                         const bgUrl = document.getElementById('bgUrl').value;
                         const sections = [];
-                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions'].forEach(s => {
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff'].forEach(s => {
                             const chk = document.getElementById('chk-' + s);
                             if (chk && chk.checked) sections.push(s);
                         });
@@ -338,7 +338,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         const selectedCats = Array.from(document.querySelectorAll('.cat-chk:checked')).map(c => c.value);
                         
                         const positions = {};
-                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions'].forEach(s => {
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff'].forEach(s => {
                             const chk = document.getElementById('chk-' + s);
                             if (chk) {
                                 const r = document.getElementById('pos-' + s + '-r').value;
@@ -376,6 +376,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                                 header_show_sub: document.getElementById('headerShowSub').checked,
                                 pred_title: document.getElementById('predTitle').value,
                                 predictions: predictions,
+                                portfolio_diff_fund: document.getElementById('portfolioDiffFund') ? document.getElementById('portfolioDiffFund').value.trim() : 'PHE',
                                 positions: positions
                             })
                         })
@@ -457,6 +458,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             
             # Position Rows HTML Generation
             pos_labels = {
+                "portfolio_diff": "Portföy Dağılımı", 
                 "inflows": "Para Girişi", "outflows": "Para Çıkışı", 
                 "cat_in": "Kategori Giriş", "cat_out": "Kategori Çıkış",
                 "inv_in": "Yatırımcı Giriş", "inv_out": "Yatırımcı Kaybı",
@@ -466,10 +468,17 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             for key, label in pos_labels.items():
                 r, c = pget(key, "R"), pget(key, "C")
                 is_checked = "checked" if key in def_sections else ""
+                
+                # Özel fon kodu input'u sadece portfolio_diff için
+                extra_input = ""
+                if key == "portfolio_diff":
+                    def_port_fund = db_config.get("portfolio_diff_fund", "PHE")
+                    extra_input = f'<input type="text" id="portfolioDiffFund" value="{def_port_fund}" style="width:70px; margin-left:10px; padding:6px; font-size:12px;" placeholder="PHE">'
+                    
                 pos_rows_html += f"""
                 <div class="pos-row">
                     <div class="pos-label">
-                        <input type="checkbox" id="chk-{key}" {is_checked} style="width:auto; margin-right:8px;"> {label}
+                        <input type="checkbox" id="chk-{key}" {is_checked} style="width:auto; margin-right:8px;"> {label} {extra_input}
                     </div>
                     <input type="number" id="pos-{key}-r" class="pos-input" value="{r}">
                     <input type="number" id="pos-{key}-c" class="pos-input" value="{c}">
@@ -524,7 +533,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             period = req_data.get('period', 'daily')
             tracked_funds = req_data.get('tracked_funds', 'TLY, DFI, PHE')
             bg_url = req_data.get('bg_url', '')
-            sections = req_data.get('sections', 'inflows,outflows,cat_in,cat_out,inv_in,inv_out,tracked')
+            sections = req_data.get('sections', 'inflows,outflows,cat_in,cat_out,inv_in,inv_out,tracked,portfolio_diff')
             selected_categories = req_data.get('selected_categories', 'Hisse Senedi,Değişken,Karma,Borçlanma Araçları,Katılım,Para Piy.,Serbest')
             grid_cols = req_data.get('grid_cols', '2')
             sort_mode = req_data.get('sort_mode', 'tl')
@@ -538,6 +547,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             header_show_main = req_data.get('header_show_main', True)
             header_show_sub = req_data.get('header_show_sub', True)
             pred_title = req_data.get('pred_title', 'Getiri Tahmini')
+            portfolio_diff_fund = req_data.get('portfolio_diff_fund', 'PHE')
             predictions = req_data.get('predictions', [])
             positions = req_data.get('positions', {})
             
@@ -552,6 +562,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                     "item_font_size": int(item_font_size), "period_font_size": int(period_font_size),
                     "watermark_anchor": watermark_anchor, "header_show_main": header_show_main,
                     "header_show_sub": header_show_sub, "pred_title": pred_title,
+                    "portfolio_diff_fund": portfolio_diff_fund,
                     "predictions": predictions, "positions": positions
                 }, f)
 
@@ -562,11 +573,17 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 # 1. Run Data Fetcher
                 # Ensure data fetcher runs if any Tefas section is requested
-                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked"]
+                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "portfolio_diff"]
                 section_list = sections.split(",")
                 needs_data = any(s in section_list for s in tefas_sections)
                 
                 if needs_data:
+                    # If portfolio_diff is active, make sure that fund is in tracked_funds so it is fetched properly
+                    current_tracked = [t.strip().upper() for t in tracked_funds.split(',')]
+                    if "portfolio_diff" in section_list and portfolio_diff_fund.upper() not in current_tracked:
+                        current_tracked.append(portfolio_diff_fund.upper())
+                        tracked_funds = ", ".join(current_tracked)
+
                     print(f"Running data fetcher for {period}...")
                     subprocess.run(["python", os.path.join(DIRECTORY, "data_fetcher.py"), period, tracked_funds, selected_categories, "--sort", sort_mode], check=True)
                 
@@ -582,6 +599,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         "watermark_anchor": watermark_anchor, "main_title": main_title_custom,
                         "subtitle": subtitle_custom, "header_show_main": header_show_main,
                         "header_show_sub": header_show_sub, "pred_title": pred_title,
+                        "portfolio_diff_fund": portfolio_diff_fund,
                         "canvas_width": int(canvas_width), "item_font_size": int(item_font_size),
                         "period_font_size": int(period_font_size), "positions": positions,
                         "predictions": predictions

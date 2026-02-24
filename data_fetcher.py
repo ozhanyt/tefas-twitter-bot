@@ -226,6 +226,67 @@ def fetch_tracked_funds(tracked_codes, period_type):
         except: pass
     return tracked_data
 
+def fetch_allocation_diff(fund_code):
+    try:
+        fund = bp.Fund(fund_code)
+        df = fund.allocation_history(period="1mo")
+        df['Date'] = pd.to_datetime(df['Date'])
+        dates = sorted(df['Date'].unique(), reverse=True)
+        
+        if len(dates) < 2:
+            return None
+            
+        latest_date = dates[0]
+        prev_date = dates[1]
+        
+        df_latest = df[df['Date'] == latest_date].copy()
+        df_prev = df[df['Date'] == prev_date].copy()
+        
+        merged = pd.merge(df_latest, df_prev, on='asset_name', how='outer', suffixes=('_latest', '_prev'))
+        merged['weight_latest'] = merged['weight_latest'].fillna(0)
+        merged['weight_prev'] = merged['weight_prev'].fillna(0)
+        merged['diff'] = merged['weight_latest'] - merged['weight_prev']
+        
+        merged = merged.sort_values(by='weight_latest', ascending=False)
+        
+        TEFAS_ORIGINAL_NAMES = {
+            "Yabancı Yatırım Fonu": "Yatırım Fonları Katılma Payları",
+            "BPP": "Takasbank Para Piyasası",
+            "Varlık İpotek Tahvil": "Türev Araçları Nakit Teminatı",
+            "Borsa Yatırım Fonu": "Borsa Yatırım Fonları",
+            "Vadesiz Mevduat Türk Lirası": "Mevduat (TL)",
+            "Vadeli Mevduat": "Mevduat (TL)",
+            "Hisse Senedi": "Hisse Senedi",
+            "Ters Repo": "Ters Repo",
+            "Devlet Tahvili": "Devlet Tahvili",
+            "Girişim Sermayesi Yatırım Katılma Belgesi": "Girişim Sermayesi Yatırım Fonu",
+            "Gayrimenkul Yatırım Katılma Belgesi": "Gayrimenkul Yatırım Fonu"
+        }
+        
+        diff_list = []
+        for _, row in merged.iterrows():
+            if row['weight_latest'] == 0 and row['diff'] == 0:
+                continue
+            
+            raw_asset_name = row['asset_name']
+            mapped_name = TEFAS_ORIGINAL_NAMES.get(raw_asset_name, raw_asset_name)
+            
+            diff_list.append({
+                'asset': mapped_name,
+                'weight': float(row['weight_latest']),
+                'diff': float(row['diff'])
+            })
+            
+        return {
+            'fund_code': fund_code,
+            'latest_date': latest_date.strftime('%Y-%m-%d'),
+            'prev_date': prev_date.strftime('%Y-%m-%d'),
+            'allocations': diff_list
+        }
+    except Exception as e:
+        logging.error(f"Error fetching allocation diff for {fund_code}: {e}")
+        return None
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("period", choices=["daily", "weekly", "monthly"], default="daily", nargs="?")
@@ -242,6 +303,13 @@ if __name__ == "__main__":
     tracked_data = fetch_tracked_funds(tracked_codes, args.period)
     top_inflows, top_outflows, top_cat_in, top_cat_out, top_inv_in, top_inv_out, footer_note = fetch_all_flows(args.period, selected_cats, args.sort)
     
+    # Fetch allocation diffs for all tracked funds
+    allocation_diffs = {}
+    for code in tracked_codes:
+        diff_data = fetch_allocation_diff(code)
+        if diff_data:
+            allocation_diffs[code] = diff_data
+    
     output = {
         'date': datetime.now().strftime("%Y-%m-%d"),
         'period_type': args.period,
@@ -253,6 +321,7 @@ if __name__ == "__main__":
         'top_inv_in': top_inv_in,
         'top_inv_out': top_inv_out,
         'tracked': tracked_data,
+        'allocation_diffs': allocation_diffs,
         'footer_note': footer_note
     }
     

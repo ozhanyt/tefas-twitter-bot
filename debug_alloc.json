@@ -1,0 +1,32 @@
+[
+  {
+    "asset_type": "Hisse Senedi",
+    "asset_name": "Stocks",
+    "weight": 81.24
+  },
+  {
+    "asset_type": "Yatırım Fonları Katılma Payları",
+    "asset_name": "Fund Shares",
+    "weight": 8.34
+  },
+  {
+    "asset_type": "Borsa İstanbul Para Piyasası",
+    "asset_name": "Borsa İstanbul Para Piyasası",
+    "weight": 5.57
+  },
+  {
+    "asset_type": "Vadeli İşlemler Nakit Teminatları",
+    "asset_name": "Futures Margin",
+    "weight": 2.92
+  },
+  {
+    "asset_type": "Borsa Yatırım Fonları Katılma Payları",
+    "asset_name": "Borsa Yatırım Fonları Katılma Payları",
+    "weight": 1.62
+  },
+  {
+    "asset_type": "Mevduat (TL)",
+    "asset_name": "TL Deposits",
+    "weight": 0.31
+  }
+]

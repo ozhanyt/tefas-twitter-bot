@@ -1,0 +1,47 @@
+{
+  "fund_code": "PHE",
+  "latest_date": "2026-02-24",
+  "prev_date": "2026-02-23",
+  "allocations": [
+    {
+      "asset": "Hisse Senedi",
+      "weight": 81.24,
+      "diff": 11.299999999999997
+    },
+    {
+      "asset": "Yatırım Fonları Katılma Payları",
+      "weight": 8.34,
+      "diff": 1.3399999999999999
+    },
+    {
+      "asset": "Takasbank Para Piyasası",
+      "weight": 5.57,
+      "diff": -1.8899999999999997
+    },
+    {
+      "asset": "Türev Araçları Nakit Teminatı",
+      "weight": 2.92,
+      "diff": 0.45999999999999996
+    },
+    {
+      "asset": "Borsa Yatırım Fonları",
+      "weight": 1.62,
+      "diff": 0.16000000000000014
+    },
+    {
+      "asset": "Mevduat (TL)",
+      "weight": 0.31,
+      "diff": 0.07999999999999999
+    },
+    {
+      "asset": "Ters Repo",
+      "weight": 0.0,
+      "diff": -4.44
+    },
+    {
+      "asset": "Ters Repo Para Piyasası",
+      "weight": 0.0,
+      "diff": -7.01
+    }
+  ]
+}

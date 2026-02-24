@@ -105,6 +105,29 @@ def tweet_outflows_only(data, period):
     return "\n".join(lines)
 
 
+def tweet_categories(data, period):
+    cat_in = data.get("top_cat_in", [])[:3]
+    cat_out = data.get("top_cat_out", [])[:3]
+    date = tr_date(data["date"])
+    lbl  = PERIOD_LABEL.get(period, "Günlük")
+
+    lines = [f"📊 TEFAS {lbl} Kategori Hareketleri — {date}\n"]
+
+    if cat_in:
+        lines.append("🟢 En Fazla Para Girişi")
+        for i, c in enumerate(cat_in, 1):
+            lines.append(f"  {i}. {c['fund_code']}  {fmt_money(c['net_flow'])}  ({fmt_pct(c['flow_pct'])})")
+
+    if cat_out:
+        lines.append("\n🔴 En Fazla Para Çıkışı")
+        for i, c in enumerate(cat_out, 1):
+            lines.append(f"  {i}. {c['fund_code']}  {fmt_money(c['net_flow'])}  ({fmt_pct(c['flow_pct'])})")
+
+    lines.append("\n📈 Detaylar görselde ↓")
+    lines.append("#TEFAS #FonYatırımı #Borsa #Yatırım")
+    return "\n".join(lines)
+
+
 def tweet_investors(data, period):
     inv_in  = data.get("top_inv_in",  [])[:3]
     inv_out = data.get("top_inv_out", [])[:3]
@@ -131,32 +154,34 @@ def tweet_investors(data, period):
 
 
 def tweet_tracked(data, period):
-    tracked = data.get("tracked_funds", {})
+    tracked = data.get("tracked", {})
     date = tr_date(data["date"])
     lbl  = PERIOD_LABEL.get(period, "Günlük")
 
-    lines = [f"🎯 Takipteki Fonlar — {lbl} Performans — {date}\n"]
+    lines = [f"🎯 {lbl} Para Girişi ve Çıkışı — {date}\n"]
+    
+    tags = ["#TEFAS", "#FonYatırımı"]
     for code, f in tracked.items():
-        ret  = fmt_pct(f.get("period_return_pct", 0))
-        flow = fmt_money(f.get("period_flow", 0))
-        inv  = f.get("period_investor_change", 0)
-        lines.append(f"  #{code}  Getiri: {ret}  Giriş: {flow}  Yatırımcı: {inv:+d}")
+        flow_val = f.get("period_flow", 0)
+        sign = "-" if flow_val < 0 else "+"
+        formatted_flow = f"{sign}{abs(int(flow_val)):,}".replace(",", ".")
+        lines.append(f"#{code.lower()} {formatted_flow}")
+        tags.append(f"#{code.upper()}")
 
-    lines.append("\n📊 Detaylar ve fon büyüklükleri görselde ↓")
-    lines.append("#TEFAS #FonYatırımı #TLY #PHE #DFI")
+    lines.append("\n" + " ".join(tags))
     return "\n".join(lines)
 
 
-def tweet_predictions(data):
-    preds = data.get("predictions", [])
+def tweet_predictions(data, config):
+    preds = config.get("predictions", [])
     date  = tr_date(data["date"])
-    title = data.get("pred_title", "Gün Sonu Tahmini")
+    title = config.get("pred_title", "Gün Ortası Tahmini")
 
     lines = [f"🔮 {title} — {date}\n"]
     for p in preds:
         code = p.get("code", "")
-        val  = p.get("value", "")
-        desc = p.get("description", "")
+        val  = p.get("val", "")
+        desc = p.get("desc", "")
         entry = f"  #{code}  {val}"
         if desc:
             entry += f"  ({desc})"
@@ -166,34 +191,97 @@ def tweet_predictions(data):
     return "\n".join(lines)
 
 
+def tweet_allocation_diff(data, config):
+    # Target the specific fund from config
+    target_fund = config.get("portfolio_diff_fund", "PHE").upper()
+    diffs = data.get("allocation_diffs", {})
+    if not diffs:
+        return "Portföy dağılım verisi bulunamadı."
+        
+    # Fallback to the first available if not found
+    if target_fund not in diffs:
+        target_fund = list(diffs.keys())[0] if diffs else None
+        
+    if not target_fund:
+        return "Portföy dağılım verisi bulunamadı."
+
+    fund_data = diffs[target_fund]
+    
+    date = tr_date(data["date"])
+    lines = [f"🎯 #{target_fund} Portföy Dağılımı (Düne Göre Değişim) — {date}\n"]
+    
+    allocations = fund_data.get("allocations", [])
+    for alloc in allocations:
+        asset = alloc.get("asset", "")
+        w = alloc.get("weight", 0)
+        d = alloc.get("diff", 0)
+        
+        # Formatting difference
+        if abs(d) < 0.01:
+            diff_str = "(-)"
+        else:
+            sign = "+" if d > 0 else ""
+            diff_str = f"({sign}%{d:.2f})".replace(".", ",")
+            
+        weight_str = f"%{w:.2f}".replace(".", ",")
+        lines.append(f"{asset}: {weight_str} {diff_str}")
+        
+    lines.append(f"\n#TEFAS #FonYatırımı #{target_fund}")
+    return "\n".join(lines)
+
+
 # ─── Main Tweet Builder ───────────────────────────────────────────────────────
 
-def generate_tweet_text(data, sections):
+def generate_tweet_text(data, sections, config=None):
     """
     Aktif section listesine göre en uygun tweet şablonunu seçer.
-    sections: ['inflows', 'outflows', 'inv_in', 'inv_out', 'tracked', 'predictions', ...]
+    sections: ['inflows', 'outflows', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', ...]
     """
+    if config is None: config = {}
     period = data.get("period_type", "daily")
     has = lambda s: s in sections
 
-    # Kombinasyon bazlı şablon seçimi
+    # ==========================
+    # Tekil Şablon Seçimleri
+    # ==========================
+    if has("portfolio_diff") and len(sections) == 1:
+        return tweet_allocation_diff(data, config)
+
     if has("predictions") and len(sections) == 1:
-        return tweet_predictions(data)
+        return tweet_predictions(data, config)
 
     if has("tracked") and len(sections) == 1:
         return tweet_tracked(data, period)
 
-    if has("inflows") and has("outflows") and not has("inv_in"):
-        return tweet_inflows_outflows(data, period)
+    if has("inflows") and not has("outflows") and len(sections) == 1:
+        return tweet_inflows_only(data, period)
+
+    if has("outflows") and not has("inflows") and len(sections) == 1:
+        return tweet_outflows_only(data, period)
+
+    if (has("cat_in") or has("cat_out")) and not has("inflows") and not has("outflows") and not has("inv_in"):
+        return tweet_categories(data, period)
+
+    if (has("inv_in") or has("inv_out")) and len(sections) <= 2:
+        return tweet_investors(data, period)
+
+    # ==========================
+    # Kombine Şablon Seçimleri 
+    # ==========================
+    if has("portfolio_diff"):
+        return tweet_allocation_diff(data, config)
+
+    if has("cat_in") or has("cat_out"):
+        return tweet_categories(data, period)
+
+    if has("inv_in") or has("inv_out"):
+        return tweet_investors(data, period)
 
     if has("inflows") and not has("outflows"):
         return tweet_inflows_only(data, period)
 
     if has("outflows") and not has("inflows"):
         return tweet_outflows_only(data, period)
-
-    if has("inv_in") or has("inv_out"):
-        return tweet_investors(data, period)
 
     # Fallback: her şey varsa inflows+outflows özeti
     return tweet_inflows_outflows(data, period)
@@ -254,7 +342,7 @@ def main():
     sections = config.get("sections", ["inflows", "outflows"])
 
     # 3. Tweet oluştur
-    tweet_text = generate_tweet_text(data, sections)
+    tweet_text = generate_tweet_text(data, sections, config)
 
     # 4. Önizleme
     print("=" * 60)

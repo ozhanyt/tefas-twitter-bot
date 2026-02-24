@@ -189,6 +189,51 @@
             letter-spacing: -2px !important;
         }
 
+        /* Portfolio Diff Only Mode Overrides */
+        .portfolio-only-layout .header {
+            display: flex !important;
+        }
+
+        .portfolio-only-layout .content-grid {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            min-height: 800px;
+        }
+
+        .portfolio-only-layout .portfolio-diff {
+            grid-column: auto !important;
+            max-width: 900px !important;
+            width: 100% !important;
+            margin: 0 auto !important;
+            padding: 60px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 60px !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        }
+
+        .portfolio-only-layout .portfolio-diff .fund-item {
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 34px !important;
+            padding: 30px 45px !important;
+        }
+
+        .portfolio-only-layout .portfolio-diff .f-name {
+            font-size: 32px !important;
+            letter-spacing: -0.5px !important;
+            color: #fff !important;
+            text-transform: none !important;
+            font-weight: 700 !important;
+        }
+
+        .portfolio-only-layout .portfolio-diff .f-val {
+            font-size: 42px !important;
+        }
+
+        .portfolio-only-layout .portfolio-diff .f-pct {
+            font-size: 32px !important;
+        }
+
         .card-header {
             display: flex;
             align-items: center;
@@ -294,6 +339,10 @@
             color: #FF453A;
         }
 
+        .trend-neutral {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
         /* Investor section value divs - covers all trend class combinations */
         .val,
         .pct,
@@ -304,7 +353,8 @@
         .pct.trend-up,
         .pct.trend-down,
         .pct.pct-up,
-        .pct.pct-down {
+        .pct.pct-down,
+        .pct.trend-neutral {
             font-family: 'Space Grotesk', sans-serif;
             font-size: var(--item-font-size) !important;
             font-weight: 700;
@@ -549,6 +599,12 @@
                     <div class="pred-only-date" style="display:none;">{{DATE}}</div>
                 </div>
                 <div class="pred-grid">{{PREDICTIONS_HTML}}</div>
+            </div>
+
+            <!-- portfolio_diff -->
+            <div class="card glass-card portfolio-diff {{SHOW_PORTFOLIO_DIFF}}" style="/* POS_PORTFOLIO_DIFF */">
+                <div class="card-header" style="display:none;"></div>
+                <ul class="fund-list">{{PORTFOLIO_DIFF_HTML}}</ul>
             </div>
         </div>
 
