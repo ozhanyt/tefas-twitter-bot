@@ -162,8 +162,9 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     
     # INVESTOR LEADERS
     # Filter for positive changes for 'in' and negative for 'out'
-    inv_pos = [r for r in results_all if r['inv_change'] > 0 and not any(x in normalize(r['name']) for x in ["para piyasasi", "p.piy"])]
-    inv_neg = [r for r in results_all if r['inv_change'] < 0 and not any(x in normalize(r['name']) for x in ["para piyasasi", "p.piy"])]
+    # Use results_filtered so category filters apply to investor leaders too
+    inv_pos = [r for r in results_filtered if r['inv_change'] > 0]
+    inv_neg = [r for r in results_filtered if r['inv_change'] < 0]
     
     inv_pos.sort(key=lambda x: x['inv_change'], reverse=True)
     inv_neg.sort(key=lambda x: x['inv_change'], reverse=False)

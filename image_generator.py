@@ -119,7 +119,7 @@ def generate_portfolio_diff_html(diffs_dict, config):
     if not diffs_dict: return html
     
     # Target the specific fund from config
-    target_fund = config.get("portfolio_diff_fund", "PHE").upper()
+    target_fund = config.get("portfolio_diff_fund", "").upper()
     
     # Fallback to the first available if not found
     if target_fund not in diffs_dict:
@@ -333,7 +333,7 @@ async def main():
         # Override title to be dynamic for portfolio diff
         diffs = data.get('allocation_diffs', {})
         if diffs:
-            target_fund = config.get("portfolio_diff_fund", "PHE").upper()
+            target_fund = config.get("portfolio_diff_fund", "").upper()
             if target_fund not in diffs:
                 target_fund = list(diffs.keys())[0] if diffs else ""
             template = template.replace(config.get("main_title") if config.get("main_title") else title, f"{target_fund} Portföy Dağılımı")
@@ -380,7 +380,7 @@ async def main():
     # Final cleanup substitutions
     template = template.replace("{{BG_URL}}", bg_url)
     template = template.replace("{{GRID_COLS}}", str(config.get("grid_cols", 2)))
-    template = template.replace("{{FOOTER_NOTE}}", "* Veriler TEFAS üzerinden alınmıştır. Serbest (Para Piyasası), Serbest (Kısa Vadeli), Serbest (Katılım), Serbest (Döviz), Para Piyasası kategorileri hariç tutulmuştur.")
+    template = template.replace("{{FOOTER_NOTE}}", data.get("footer_note", "* Veriler TEFAS üzerinden alınmıştır."))
     
     # Positions and Dynamic Grid Styles
     positions = config.get("positions", {})

@@ -193,7 +193,7 @@ def tweet_predictions(data, config):
 
 def tweet_allocation_diff(data, config):
     # Target the specific fund from config
-    target_fund = config.get("portfolio_diff_fund", "PHE").upper()
+    target_fund = config.get("portfolio_diff_fund", "").upper()
     diffs = data.get("allocation_diffs", {})
     if not diffs:
         return "Portföy dağılım verisi bulunamadı."
