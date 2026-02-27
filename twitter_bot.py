@@ -230,6 +230,30 @@ def tweet_allocation_diff(data, config):
     return "\n".join(lines)
 
 
+def tweet_top_returns(data, period):
+    """En Çok Kazandıranlar + En Çok Kaybedenler"""
+    gainers = data.get("top_gainers", [])[:3]
+    losers  = data.get("top_losers",  [])[:3]
+    date = tr_date(data["date"])
+    lbl  = PERIOD_LABEL.get(period, "Günlük")
+
+    lines = [f"📊 TEFAS {lbl} Getiri — {date}\n"]
+
+    if gainers:
+        lines.append("🏆 En Çok Kazandıranlar")
+        for i, f in enumerate(gainers, 1):
+            lines.append(f"  {i}. #{f['fund_code']}  {fmt_pct(f.get('return_pct', 0))}")
+
+    if losers:
+        lines.append("\n💔 En Çok Kaybedenler")
+        for i, f in enumerate(losers, 1):
+            lines.append(f"  {i}. #{f['fund_code']}  {fmt_pct(f.get('return_pct', 0))}")
+
+    lines.append("\n📈 Detaylar görselde ↓")
+    lines.append("#TEFAS #FonYatırımı #Borsa #Yatırım")
+    return "\n".join(lines)
+
+
 # ─── Main Tweet Builder ───────────────────────────────────────────────────────
 
 def generate_tweet_text(data, sections, config=None):
@@ -253,6 +277,9 @@ def generate_tweet_text(data, sections, config=None):
     if has("tracked") and len(sections) == 1:
         return tweet_tracked(data, period)
 
+    if (has("top_gainers") or has("top_losers")) and not has("inflows") and not has("outflows") and not has("cat_in") and not has("cat_out") and not has("inv_in") and not has("inv_out"):
+        return tweet_top_returns(data, period)
+
     if has("inflows") and not has("outflows") and len(sections) == 1:
         return tweet_inflows_only(data, period)
 
@@ -270,6 +297,9 @@ def generate_tweet_text(data, sections, config=None):
     # ==========================
     if has("portfolio_diff"):
         return tweet_allocation_diff(data, config)
+
+    if has("top_gainers") or has("top_losers"):
+        return tweet_top_returns(data, period)
 
     if has("cat_in") or has("cat_out"):
         return tweet_categories(data, period)

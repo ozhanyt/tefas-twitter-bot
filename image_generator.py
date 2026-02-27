@@ -160,6 +160,28 @@ def generate_portfolio_diff_html(diffs_dict, config):
         """
     return html
 
+def generate_top_returns_html(funds, is_gainer=True):
+    html = ""
+    for f in funds:
+        ret = f.get('return_pct', 0)
+        trend_class = "trend-up" if ret >= 0 else "trend-down"
+        sign = "+" if ret >= 0 else ""
+        ret_str = f"{sign}{format_pct(ret, 2)}"
+        name = f.get('name', '')
+        
+        html += f"""
+        <li class="fund-item">
+            <div class="f-left">
+                <span class="f-code">{f['fund_code']}</span>
+                <span class="f-name">{name}</span>
+            </div>
+            <div class="f-right">
+                <span class="f-val {trend_class}">{ret_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
 def generate_tracked_html(tracked_dict, period_label):
     html = ""
     # We expect data like: { "TLY": { "price": ..., "period_flow": ..., "period_return_pct": ..., "inv_change": ..., "total_size": ... } }
@@ -290,6 +312,9 @@ async def main():
     
     portfolio_diff_html = generate_portfolio_diff_html(data.get('allocation_diffs', {}), config) if "portfolio_diff" in sections else ""
     
+    top_gainers_html = generate_top_returns_html(data.get('top_gainers', []), True) if "top_gainers" in sections else ""
+    top_losers_html = generate_top_returns_html(data.get('top_losers', []), False) if "top_losers" in sections else ""
+    
     predictions = config.get("predictions", [])
     predictions_html = generate_predictions_html(predictions) if "predictions" in sections else ""
     
@@ -322,6 +347,8 @@ async def main():
     template = template.replace("{{TOP_INV_OUT_HTML}}", inv_out_html)
     template = template.replace("{{TRACKED_FUNDS_HTML}}", tracked_html)
     template = template.replace("{{PORTFOLIO_DIFF_HTML}}", portfolio_diff_html)
+    template = template.replace("{{TOP_GAINERS_HTML}}", top_gainers_html)
+    template = template.replace("{{TOP_LOSERS_HTML}}", top_losers_html)
     template = template.replace("{{PREDICTIONS_HTML}}", predictions_html)
     template = template.replace("{{PRED_TITLE}}", config.get("pred_title", "Getiri Tahmini"))
     
@@ -342,7 +369,7 @@ async def main():
     template = template.replace("{{LAYOUT_MODE_CLASS}}", layout_mode_class)
     
     # Conditional Visibility and Positioning
-    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions", "portfolio_diff"]:
+    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions", "portfolio_diff", "top_gainers", "top_losers"]:
         placeholder_show = f"{{{{SHOW_{s_name.upper()}}}}}"
         placeholder_pos = f"/* POS_{s_name.upper()} */"
         
@@ -421,6 +448,8 @@ async def main():
     template = template.replace("/* POS_TRACKED */", get_grid_pos("tracked"))
     template = template.replace("/* POS_PREDICTIONS */", get_grid_pos("predictions"))
     template = template.replace("/* POS_PORTFOLIO_DIFF */", get_grid_pos("portfolio_diff"))
+    template = template.replace("/* POS_TOP_GAINERS */", get_grid_pos("top_gainers"))
+    template = template.replace("/* POS_TOP_LOSERS */", get_grid_pos("top_losers"))
     
     # Watermark position is now handled relatively in index.html
     # We clear the placeholder to avoid CSS errors

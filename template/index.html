@@ -279,7 +279,7 @@
         }
 
         .portfolio-only-layout .portfolio-diff .f-name {
-            font-size: 26px !important;
+            font-size: 36px !important;
             letter-spacing: -0.5px !important;
             color: #fff !important;
             text-transform: none !important;
@@ -288,12 +288,12 @@
         }
 
         .portfolio-only-layout .portfolio-diff .f-val {
-            font-size: 34px !important;
+            font-size: calc(var(--item-font-size) * 1.35) !important;
             line-height: 1 !important;
         }
 
         .portfolio-only-layout .portfolio-diff .f-pct {
-            font-size: 24px !important;
+            font-size: calc(var(--item-font-size) * 0.95) !important;
         }
 
         /* Tracked Only Mode Overrides */
@@ -576,6 +576,15 @@
             font-weight: 600;
         }
 
+        /* Glass Button Variables */
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0);
+            --glass-highlight: rgba(255, 255, 255, 0.75);
+            --glass-text: #ffffff;
+            --glass-shadow: rgba(0, 0, 0, 0.2);
+            --accent-color: #007AFF;
+        }
+
         .watermark-container {
             display: flex;
             justify-content: center;
@@ -587,27 +596,45 @@
         }
 
         .watermark {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            padding: 6px 16px;
+            position: relative;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            padding: 8px 20px;
             border-radius: 40px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            gap: 8px;
+            border: 1px solid var(--glass-highlight);
+            box-shadow:
+                0 4px 16px var(--glass-shadow),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .watermark::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: var(--glass-bg);
+            z-index: 1;
         }
 
         .watermark span {
+            position: relative;
+            z-index: 2;
             font-size: 14px;
             font-weight: 700;
-            color: #fff;
+            color: var(--glass-text);
         }
 
         .x-logo {
+            position: relative;
+            z-index: 2;
             width: 24px;
             height: 24px;
-            color: #fff;
+            color: var(--glass-text);
         }
 
         .footer-note {
@@ -711,6 +738,25 @@
                 <div class="pred-grid">{{PREDICTIONS_HTML}}</div>
             </div>
 
+            <!-- top_gainers -->
+            <div class="card glass-card top-gainers {{SHOW_TOP_GAINERS}}" style="/* POS_TOP_GAINERS */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(48,209,88,0.2); color:#30D158;">🏆</div>
+                    <h2>En Çok Kazandıranlar <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_GAINERS_HTML}}</ul>
+            </div>
+
+            <!-- top_losers -->
+            <div class="card glass-card top-losers {{SHOW_TOP_LOSERS}}" style="/* POS_TOP_LOSERS */">
+                <div class="card-header">
+                    <div class="header-icon outflow-icon" style="background:rgba(255,69,58,0.2); color:#FF453A;">💔
+                    </div>
+                    <h2>En Çok Kaybedenler <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TOP_LOSERS_HTML}}</ul>
+            </div>
+
             <!-- portfolio_diff -->
             <div class="card glass-card portfolio-diff {{SHOW_PORTFOLIO_DIFF}}" style="/* POS_PORTFOLIO_DIFF */">
                 <div class="card-header" style="display:none;"></div>
@@ -756,7 +802,7 @@
         .pred-only-layout .predictions h2 {
             font-size: 38px !important;
             font-weight: 800 !important;
-            
+
         }
 
         .pred-only-layout .pred-only-date {

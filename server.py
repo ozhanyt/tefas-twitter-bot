@@ -309,7 +309,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         
                         const bgUrl = document.getElementById('bgUrl').value;
                         const sections = [];
-                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff'].forEach(s => {
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', 'top_gainers', 'top_losers'].forEach(s => {
                             const chk = document.getElementById('chk-' + s);
                             if (chk && chk.checked) sections.push(s);
                         });
@@ -338,7 +338,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         const selectedCats = Array.from(document.querySelectorAll('.cat-chk:checked')).map(c => c.value);
                         
                         const positions = {};
-                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff'].forEach(s => {
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', 'top_gainers', 'top_losers'].forEach(s => {
                             const chk = document.getElementById('chk-' + s);
                             if (chk) {
                                 const r = document.getElementById('pos-' + s + '-r').value;
@@ -462,6 +462,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                 "inflows": "Para Girişi", "outflows": "Para Çıkışı", 
                 "cat_in": "Kategori Giriş", "cat_out": "Kategori Çıkış",
                 "inv_in": "Yatırımcı Giriş", "inv_out": "Yatırımcı Kaybı",
+                "top_gainers": "En Çok Kazandıran", "top_losers": "En Çok Kaybeden",
                 "tracked": "Takipteki Fonlar", "predictions": "Tahmin"
             }
             pos_rows_html = ""
@@ -573,7 +574,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 # 1. Run Data Fetcher
                 # Ensure data fetcher runs if any Tefas section is requested
-                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "portfolio_diff"]
+                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "portfolio_diff", "top_gainers", "top_losers"]
                 section_list = sections.split(",")
                 needs_data = any(s in section_list for s in tefas_sections)
                 

@@ -50,6 +50,9 @@ def get_fund_flow(fund_code, period_type):
         net_flow = (latest_shares - prev_shares) * latest['Price']
         flow_pct = (net_flow / prev['FundSize']) * 100 if prev['FundSize'] > 0 else 0
         
+        # Price-based return calculation
+        return_pct = ((latest['Price'] - prev['Price']) / prev['Price']) * 100 if prev['Price'] > 0 else 0
+        
         # Investor change
         inv_latest = latest.get('Investors', 0)
         inv_prev = prev.get('Investors', 0)
@@ -62,6 +65,7 @@ def get_fund_flow(fund_code, period_type):
             'net_flow': float(net_flow),
             'fund_size': float(latest['FundSize']),
             'flow_pct': float(flow_pct),
+            'return_pct': float(return_pct),
             'investors': int(inv_latest),
             'inv_change': int(inv_change),
             'inv_change_pct': float(inv_change_pct)
@@ -172,6 +176,12 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     top_inv_in = inv_pos[:5]
     top_inv_out = inv_neg[:5]
 
+    # TOP GAINERS / LOSERS (price-based return)
+    gainers = sorted([r for r in results_filtered if r.get('return_pct', 0) > 0], key=lambda x: x['return_pct'], reverse=True)
+    losers = sorted([r for r in results_filtered if r.get('return_pct', 0) < 0], key=lambda x: x['return_pct'])
+    top_gainers = gainers[:5]
+    top_losers = losers[:5]
+
     # Category flows
     cat_flows = {}
     for res in results_all:
@@ -197,7 +207,7 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
         footer_detail = "Para Piyasası ve Döviz fonları hariç tutulmuştur."
     footer_note = f"* Veriler TEFAS üzerinden alınmıştır. {footer_detail}"
     
-    return top_inflows, top_outflows, cat_list_in, cat_list_out, top_inv_in, top_inv_out, footer_note
+    return top_inflows, top_outflows, cat_list_in, cat_list_out, top_inv_in, top_inv_out, top_gainers, top_losers, footer_note
 
 def fetch_tracked_funds(tracked_codes, period_type):
     tracked_data = {}
@@ -302,7 +312,7 @@ if __name__ == "__main__":
     if not tracked_codes: tracked_codes = ['TLY', 'DFI', 'PHE']
         
     tracked_data = fetch_tracked_funds(tracked_codes, args.period)
-    top_inflows, top_outflows, top_cat_in, top_cat_out, top_inv_in, top_inv_out, footer_note = fetch_all_flows(args.period, selected_cats, args.sort)
+    top_inflows, top_outflows, top_cat_in, top_cat_out, top_inv_in, top_inv_out, top_gainers, top_losers, footer_note = fetch_all_flows(args.period, selected_cats, args.sort)
     
     # Fetch allocation diffs for all tracked funds
     allocation_diffs = {}
@@ -321,6 +331,8 @@ if __name__ == "__main__":
         'top_cat_out': top_cat_out,
         'top_inv_in': top_inv_in,
         'top_inv_out': top_inv_out,
+        'top_gainers': top_gainers,
+        'top_losers': top_losers,
         'tracked': tracked_data,
         'allocation_diffs': allocation_diffs,
         'footer_note': footer_note
