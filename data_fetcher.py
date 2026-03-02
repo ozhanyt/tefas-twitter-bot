@@ -20,7 +20,9 @@ def get_prev_row(df, period_type):
     elif period_type == "weekly":
         target = latest_date - timedelta(days=7)
     elif period_type == "monthly":
-        target = latest_date - timedelta(days=30)
+        # Target the last day of the previous calendar month
+        first_day_of_current_month = latest_date.replace(day=1)
+        target = first_day_of_current_month - timedelta(days=1)
     else:
         return df.iloc[-2]
         
@@ -177,8 +179,10 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     top_inv_out = inv_neg[:5]
 
     # TOP GAINERS / LOSERS (price-based return)
-    gainers = sorted([r for r in results_filtered if r.get('return_pct', 0) > 0], key=lambda x: x['return_pct'], reverse=True)
-    losers = sorted([r for r in results_filtered if r.get('return_pct', 0) < 0], key=lambda x: x['return_pct'])
+    # Filter out funds with -100% return (price is 0, fund hasn't published today's price yet)
+    valid_returns = [r for r in results_filtered if r.get('return_pct', 0) != -100]
+    gainers = sorted([r for r in valid_returns if r.get('return_pct', 0) > 0], key=lambda x: x['return_pct'], reverse=True)
+    losers = sorted([r for r in valid_returns if r.get('return_pct', 0) < 0], key=lambda x: x['return_pct'])
     top_gainers = gainers[:5]
     top_losers = losers[:5]
 
@@ -262,16 +266,19 @@ def fetch_allocation_diff(fund_code):
         
         TEFAS_ORIGINAL_NAMES = {
             "Yabancı Yatırım Fonu": "Yatırım Fonları Katılma Payları",
-            "BPP": "Takasbank Para Piyasası",
-            "Varlık İpotek Tahvil": "Türev Araçları Nakit Teminatı",
-            "Borsa Yatırım Fonu": "Borsa Yatırım Fonları",
+            "BPP": "Borsa İstanbul Para Piyasası",
+            "Ters Repo Para Piyasası": "Takasbank Para Piyasası",
+            "Varlık İpotek Tahvil": "Vadeli İşlemler Nakit Teminatları",
+            "Borsa Yatırım Fonu": "Borsa Yatırım Fonları Katılma Payları",
             "Vadesiz Mevduat Türk Lirası": "Mevduat (TL)",
             "Vadeli Mevduat": "Mevduat (TL)",
             "Hisse Senedi": "Hisse Senedi",
             "Ters Repo": "Ters Repo",
             "Devlet Tahvili": "Devlet Tahvili",
             "Girişim Sermayesi Yatırım Katılma Belgesi": "Girişim Sermayesi Yatırım Fonu",
-            "Gayrimenkul Yatırım Katılma Belgesi": "Gayrimenkul Yatırım Fonu"
+            "Gayrimenkul Yatırım Katılma Belgesi": "Gayrimenkul Yatırım Fonu",
+            "Kamu Dış Borçlanma Aracı": "Kamu Dış Borçlanma Araçları",
+            "Varlığa Dayalı Menkul Kıymet": "Varlığa Dayalı Menkul Kıymet"
         }
         
         diff_list = []
@@ -281,6 +288,11 @@ def fetch_allocation_diff(fund_code):
             
             raw_asset_name = row['asset_name']
             mapped_name = TEFAS_ORIGINAL_NAMES.get(raw_asset_name, raw_asset_name)
+            
+            # Special Override for TLY: TEFAS reports "Vadeli Mevduat" under asset name but it is actually VDMK.
+            if fund_code == 'TLY' and raw_asset_name == 'Vadeli Mevduat':
+                mapped_name = "Varlığa Dayalı Menkul Kıymet"
+            
             
             diff_list.append({
                 'asset': mapped_name,

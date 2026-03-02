@@ -1,0 +1,11 @@
+asset_type,Date,asset_name,weight
+BPP,2026-01-22 03:00:00,BPP,1.47
+DT,2026-02-24 03:00:00,Devlet Tahvili,0.07
+FB,2026-02-26 03:00:00,Finansman Bonosu,0.08
+GYKB,2026-02-26 03:00:00,Gayrimenkul Yatırım Katılma Belgesi,12.24
+HS,2026-02-26 03:00:00,Hisse Senedi,69.58
+TR,2026-02-26 03:00:00,Ters Repo,15.02
+VDM,2026-02-26 03:00:00,Vadeli Mevduat,0.67
+VMTL,2025-12-25 03:00:00,Vadesiz Mevduat Türk Lirası,1.42
+VİNT,2026-02-26 03:00:00,Varlık İpotek Tahvil,0.7
+YYF,2026-02-26 03:00:00,Yabancı Yatırım Fonu,2.4
