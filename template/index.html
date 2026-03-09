@@ -37,6 +37,14 @@
             }
 
             px;
+
+            --tcode-font-size: {
+                    {
+                    TCODE_FONT_SIZE
+                }
+            }
+
+            px;
         }
 
         body {
@@ -296,6 +304,31 @@
             font-size: calc(var(--item-font-size) * 0.95) !important;
         }
 
+        /* Portfolio 2-Column Grid Layout */
+        .portfolio-grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .portfolio-diff.cols-2 .fund-item {
+            padding: 6px 10px !important;
+            border-radius: 12px !important;
+        }
+
+        .portfolio-diff.cols-2 .f-name {
+            font-size: calc(var(--item-font-size) * 0.75) !important;
+        }
+
+        .portfolio-diff.cols-2 .f-val {
+            font-size: calc(var(--item-font-size) * 0.85) !important;
+        }
+
+        .portfolio-diff.cols-2 .f-pct {
+            font-size: calc(var(--item-font-size) * 0.6) !important;
+        }
+
         /* Tracked Only Mode Overrides */
 
 
@@ -466,9 +499,20 @@
         }
 
         /* Tracked Funds Cards — Premium Glass Morphism */
+        .tracked-funds {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
         .tracked-list {
             display: grid;
-            gap: 16px;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+            align-content: start;
         }
 
         .tracked-card {
@@ -476,11 +520,11 @@
             backdrop-filter: blur(20px) saturate(180%);
             background: rgba(255, 255, 255, 0);
             border: 1px solid rgba(255, 255, 255, 0.18);
-            border-radius: 24px;
-            padding: 20px 24px;
+            border-radius: 20px;
+            padding: 14px 18px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 10px;
             box-shadow:
                 0 8px 32px rgba(0, 0, 0, 0.3),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -502,11 +546,11 @@
             justify-content: space-between;
             align-items: baseline;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 12px;
+            padding-bottom: 8px;
         }
 
         .t-code {
-            font-size: 38px;
+            font-size: var(--tcode-font-size);
             font-weight: 700;
             letter-spacing: -0.03em;
             color: #fff;
@@ -534,11 +578,12 @@
         .t-stat-block {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 10px 12px;
+            border-radius: 12px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1px;
+            overflow: hidden;
         }
 
         .t-label {
@@ -553,8 +598,9 @@
         .t-values-row {
             display: flex;
             align-items: baseline;
-            gap: 6px;
-            flex-wrap: wrap;
+            gap: 4px;
+            flex-wrap: nowrap;
+            overflow: hidden;
         }
 
         .t-val-main,
@@ -565,6 +611,7 @@
             font-feature-settings: 'tnum';
             letter-spacing: -0.02em;
             line-height: 1.2;
+            white-space: nowrap;
         }
 
         .t-val-sub,
@@ -572,6 +619,81 @@
         .t-val-sub.trend-down {
             font-size: calc(var(--item-font-size) * 0.55) !important;
             font-weight: 600;
+        }
+
+        .t-chart-card {
+            position: relative;
+            backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            padding: 16px 20px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            grid-column: 1 / -1;
+        }
+
+        .t-chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .t-chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .t-chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .t-chart-legend {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .chart-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .t-chart-container {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 8px 10px;
+            height: 200px;
+            position: relative;
+        }
+
+        .t-chart-container canvas {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         /* Glass Button Variables */
@@ -769,6 +891,11 @@
                 <h2>Takipteki Fonlar <span class="period-label">({{PERIOD_TYPE_LABEL}})</span></h2>
             </div>
             <div class="tracked-list" style="/* DYNAMIC_TRACKED_GRID */">{{TRACKED_FUNDS_HTML}}</div>
+        </div>
+
+        <!-- return_chart -->
+        <div class="card glass-card return-chart-section {{SHOW_RETURN_CHART}}" style="/* POS_RETURN_CHART */">
+            {{RETURN_CHART_HTML}}
         </div>
 
         <!-- footer area -->

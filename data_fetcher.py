@@ -231,15 +231,32 @@ def fetch_tracked_funds(tracked_codes, period_type):
             inv_change = latest['Investors'] - prev['Investors']
             inv_change_pct = (inv_change / prev['Investors']) * 100 if prev['Investors'] > 0 else 0
             return_pct = ((latest['Price'] - prev['Price']) / prev['Price']) * 100
+            
+            # Build price history for chart (from period start to latest)
+            prev_date = prev.name if hasattr(prev, 'name') else df.index[0]
+            history_df = df[df.index >= prev_date]
+            base_price = float(prev['Price'])
+            price_history = []
+            for idx, row in history_df.iterrows():
+                cum_ret = ((float(row['Price']) - base_price) / base_price) * 100 if base_price > 0 else 0
+                date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx)
+                price_history.append({
+                    "date": date_str,
+                    "price": float(row['Price']),
+                    "cum_return_pct": round(cum_ret, 4)
+                })
+            
             tracked_data[code] = {
                 'fund_code': code, 'name': fund.info.get('name', ''), 'price': float(latest['Price']),
                 'fund_size': float(latest['FundSize']), 'investors': int(latest['Investors']),
                 'period_flow': float(flow), 'period_flow_pct': float(flow_pct),
                 'period_investor_change': int(inv_change), 'period_investor_pct': float(inv_change_pct),
-                'period_return_pct': float(return_pct)
+                'period_return_pct': float(return_pct),
+                'price_history': price_history
             }
         except: pass
     return tracked_data
+
 
 def fetch_allocation_diff(fund_code):
     try:

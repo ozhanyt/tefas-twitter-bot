@@ -71,6 +71,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             def_canvas_width = db_config.get("canvas_width", 1600)
             def_item_font_size = db_config.get("item_font_size", 25)
             def_period_font_size = db_config.get("period_font_size", 25)
+            def_tcode_font_size = db_config.get("tcode_font_size", 38)
             def_tracked_funds = db_config.get("tracked_funds", "TLY, DFI, PHE")
             def_bg_url = db_config.get("bg_url", "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1964")
             def_main_title = db_config.get("main_title", "GÜNLÜK TEFAS ÖZETİ")
@@ -80,10 +81,11 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             def_wm_anchor = db_config.get("watermark_anchor", "bottom")
             def_sort_mode = db_config.get("sort_mode", "tl")
             def_pred_title = db_config.get("pred_title", "Getiri Tahmini")
+            def_port_cols = db_config.get("portfolio_diff_cols", 1)
             
             # Position defaults
             def_pos = db_config.get("positions", {})
-            def_sections = db_config.get("sections", ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked"])
+            def_sections = db_config.get("sections", ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "return_chart"])
             
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
@@ -216,6 +218,15 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                                 </div>
                             </div>
 
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="input-group">
+                                    <label for="tcodeFontSize">Takip Kodu Font (px):</label>
+                                    <input type="number" id="tcodeFontSize" value="{{TCODE_FONT_SIZE}}">
+                                </div>
+                                <div class="input-group" style="display:flex; align-items:center; gap:10px; padding-top:28px;">
+                                </div>
+                            </div>
+
                             <div class="input-group">
                                 <label for="watermarkAnchor">Filigran Konumu:</label>
                                 <select id="watermarkAnchor">
@@ -309,7 +320,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         
                         const bgUrl = document.getElementById('bgUrl').value;
                         const sections = [];
-                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', 'top_gainers', 'top_losers'].forEach(s => {
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', 'top_gainers', 'top_losers', 'return_chart'].forEach(s => {
                             const chk = document.getElementById('chk-' + s);
                             if (chk && chk.checked) sections.push(s);
                         });
@@ -338,7 +349,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         const selectedCats = Array.from(document.querySelectorAll('.cat-chk:checked')).map(c => c.value);
                         
                         const positions = {};
-                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', 'top_gainers', 'top_losers'].forEach(s => {
+                        ['inflows', 'outflows', 'cat_in', 'cat_out', 'inv_in', 'inv_out', 'tracked', 'predictions', 'portfolio_diff', 'top_gainers', 'top_losers', 'return_chart'].forEach(s => {
                             const chk = document.getElementById('chk-' + s);
                             if (chk) {
                                 const r = document.getElementById('pos-' + s + '-r').value;
@@ -369,6 +380,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                                 tracked_grid_cols: document.getElementById('trackedGridCols').value,
                                 item_font_size: document.getElementById('itemFontSize').value,
                                 period_font_size: document.getElementById('periodFontSize').value,
+                                tcode_font_size: document.getElementById('tcodeFontSize').value,
                                 watermark_anchor: document.getElementById('watermarkAnchor').value,
                                 main_title: document.getElementById('mainTitle').value,
                                 subtitle: document.getElementById('subtitle').value,
@@ -377,6 +389,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                                 pred_title: document.getElementById('predTitle').value,
                                 predictions: predictions,
                                 portfolio_diff_fund: document.getElementById('portfolioDiffFund') ? document.getElementById('portfolioDiffFund').value.trim() : 'PHE',
+                                portfolio_diff_cols: document.getElementById('portfolioDiffCols') ? document.getElementById('portfolioDiffCols').value : 1,
                                 positions: positions
                             })
                         })
@@ -463,7 +476,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                 "cat_in": "Kategori Giriş", "cat_out": "Kategori Çıkış",
                 "inv_in": "Yatırımcı Giriş", "inv_out": "Yatırımcı Kaybı",
                 "top_gainers": "En Çok Kazandıran", "top_losers": "En Çok Kaybeden",
-                "tracked": "Takipteki Fonlar", "predictions": "Tahmin"
+                "tracked": "Takipteki Fonlar", "return_chart": "Getiri Grafiği", "predictions": "Tahmin"
             }
             pos_rows_html = ""
             for key, label in pos_labels.items():
@@ -474,7 +487,14 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                 extra_input = ""
                 if key == "portfolio_diff":
                     def_port_fund = db_config.get("portfolio_diff_fund", "PHE")
-                    extra_input = f'<input type="text" id="portfolioDiffFund" value="{def_port_fund}" style="width:70px; margin-left:10px; padding:6px; font-size:12px;" placeholder="PHE">'
+                    def_port_cols = db_config.get("portfolio_diff_cols", 1)
+                    extra_input = f'''
+                    <input type="text" id="portfolioDiffFund" value="{def_port_fund}" style="width:70px; margin-left:10px; padding:6px; font-size:12px;" placeholder="PHE">
+                    <select id="portfolioDiffCols" style="width:70px; margin-left:5px; padding:6px; font-size:12px;">
+                        <option value="1" {"selected" if def_port_cols == 1 else ""}>1 Sütun</option>
+                        <option value="2" {"selected" if def_port_cols == 2 else ""}>2 Sütun</option>
+                    </select>
+                    '''
                     
                 pos_rows_html += f"""
                 <div class="pos-row">
@@ -511,6 +531,8 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             html = html.replace("{{CANVAS_WIDTH}}", str(def_canvas_width))
             html = html.replace("{{ITEM_FONT_SIZE}}", str(def_item_font_size))
             html = html.replace("{{PERIOD_FONT_SIZE}}", str(def_period_font_size))
+            html = html.replace("{{TCODE_FONT_SIZE}}", str(def_tcode_font_size))
+            # Removed standard SHOW_CHART_CHECKED as it's now a section
             html = html.replace("{{PRED_SECTION_TITLE}}", str(def_pred_title))
             
             html = html.replace("{{SEL_WM_BOTTOM}}", "selected" if def_wm_anchor == "bottom" else "")
@@ -542,6 +564,8 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             tracked_grid_cols = req_data.get('tracked_grid_cols', '1')
             item_font_size = req_data.get('item_font_size', 25)
             period_font_size = req_data.get('period_font_size', 25)
+            tcode_font_size = req_data.get('tcode_font_size', 38)
+            show_chart = req_data.get('show_chart', False)
             watermark_anchor = req_data.get('watermark_anchor', 'bottom')
             main_title_custom = req_data.get('main_title', '')
             subtitle_custom = req_data.get('subtitle', '')
@@ -549,6 +573,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             header_show_sub = req_data.get('header_show_sub', True)
             pred_title = req_data.get('pred_title', 'Getiri Tahmini')
             portfolio_diff_fund = req_data.get('portfolio_diff_fund', 'PHE')
+            portfolio_diff_cols = int(req_data.get('portfolio_diff_cols', 1))
             predictions = req_data.get('predictions', [])
             positions = req_data.get('positions', {})
             
@@ -561,9 +586,12 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                     "grid_cols": int(grid_cols), "sort_mode": sort_mode,
                     "canvas_width": int(canvas_width), "tracked_grid_cols": int(tracked_grid_cols),
                     "item_font_size": int(item_font_size), "period_font_size": int(period_font_size),
+                    "tcode_font_size": int(tcode_font_size),
+                    "show_chart": bool(show_chart),
                     "watermark_anchor": watermark_anchor, "header_show_main": header_show_main,
                     "header_show_sub": header_show_sub, "pred_title": pred_title,
                     "portfolio_diff_fund": portfolio_diff_fund,
+                    "portfolio_diff_cols": int(req_data.get('portfolio_diff_cols', 1)),
                     "predictions": predictions, "positions": positions
                 }, f)
 
@@ -574,7 +602,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 # 1. Run Data Fetcher
                 # Ensure data fetcher runs if any Tefas section is requested
-                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "portfolio_diff", "top_gainers", "top_losers"]
+                tefas_sections = ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "portfolio_diff", "top_gainers", "top_losers", "return_chart"]
                 section_list = sections.split(",")
                 needs_data = any(s in section_list for s in tefas_sections)
                 
@@ -601,8 +629,10 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         "subtitle": subtitle_custom, "header_show_main": header_show_main,
                         "header_show_sub": header_show_sub, "pred_title": pred_title,
                         "portfolio_diff_fund": portfolio_diff_fund,
+                        "portfolio_diff_cols": portfolio_diff_cols,
                         "canvas_width": int(canvas_width), "item_font_size": int(item_font_size),
-                        "period_font_size": int(period_font_size), "positions": positions,
+                        "period_font_size": int(period_font_size), "tcode_font_size": int(tcode_font_size),
+                        "positions": positions,
                         "predictions": predictions
                     }, f, ensure_ascii=False)
                 

@@ -120,6 +120,7 @@ def generate_portfolio_diff_html(diffs_dict, config):
     
     # Target the specific fund from config
     target_fund = config.get("portfolio_diff_fund", "").upper()
+    cols = int(config.get("portfolio_diff_cols", 1))
     
     # Fallback to the first available if not found
     if target_fund not in diffs_dict:
@@ -131,7 +132,7 @@ def generate_portfolio_diff_html(diffs_dict, config):
     data = diffs_dict[target_fund]
     allocations = data.get("allocations", [])
     
-    for alloc in allocations:
+    def get_item_html(alloc):
         asset = alloc.get("asset", "")
         w = alloc.get("weight", 0)
         d = alloc.get("diff", 0)
@@ -139,7 +140,6 @@ def generate_portfolio_diff_html(diffs_dict, config):
         if abs(d) < 0.01:
             diff_str = "(-)"
             trend_class = "trend-neutral"
-            sign = ""
         else:
             sign = "+" if d > 0 else ""
             diff_str = f"({sign}%{d:.2f})".replace(".", ",")
@@ -147,7 +147,7 @@ def generate_portfolio_diff_html(diffs_dict, config):
             
         weight_str = f"%{w:.2f}".replace(".", ",")
         
-        html += f"""
+        return f"""
         <li class="fund-item portfolio-fund-item">
             <div class="f-left">
                 <span class="f-name">{asset}</span>
@@ -158,6 +158,20 @@ def generate_portfolio_diff_html(diffs_dict, config):
             </div>
         </li>
         """
+
+    if cols == 2 and len(allocations) > 1:
+        # Split into two columns
+        mid = (len(allocations) + 1) // 2
+        col1 = allocations[:mid]
+        col2 = allocations[mid:]
+        
+        html = '<div class="portfolio-grid-2col">'
+        html += '<ul class="fund-list">' + "".join([get_item_html(a) for a in col1]) + '</ul>'
+        html += '<ul class="fund-list">' + "".join([get_item_html(a) for a in col2]) + '</ul>'
+        html += '</div>'
+    else:
+        html = '<ul class="fund-list">' + "".join([get_item_html(a) for a in allocations]) + '</ul>'
+        
     return html
 
 def generate_top_returns_html(funds, is_gainer=True):
@@ -182,17 +196,16 @@ def generate_top_returns_html(funds, is_gainer=True):
         """
     return html
 
-def generate_tracked_html(tracked_dict, period_label):
+def generate_tracked_html(tracked_dict, period_label, show_chart=False):
     html = ""
-    # We expect data like: { "TLY": { "price": ..., "period_flow": ..., "period_return_pct": ..., "inv_change": ..., "total_size": ... } }
     for code, data in tracked_dict.items():
         price = data.get('price', 0)
         p_flow = data.get('period_flow', 0)
         p_ret = data.get('period_return_pct', 0)
-        inv_change = data.get('period_investor_change', 0)   # was: inv_change
-        inv_pct = data.get('period_investor_pct', 0)         # was: inv_pct
-        total_size = data.get('fund_size', 0)                # was: total_size
-        flow_pct = data.get('period_flow_pct', 0)            # was: flow_pct
+        inv_change = data.get('period_investor_change', 0)
+        inv_pct = data.get('period_investor_pct', 0)
+        total_size = data.get('fund_size', 0)
+        flow_pct = data.get('period_flow_pct', 0)
 
         price_str = f"₺{price:,.6f}".replace(",", "X").replace(".", ",").replace("X", ".")
         flow_str = format_money(p_flow)
@@ -246,6 +259,146 @@ def generate_tracked_html(tracked_dict, period_label):
         """
         
     return html
+
+
+# Distinct colors for each fund line
+CHART_COLORS = ["#5AC8FA", "#30D158", "#BF5AF2", "#FF9F0A", "#FF453A", "#64D2FF", "#FFD60A", "#FF6482"]
+
+def generate_combined_chart_html(tracked_dict, period_label):
+    """Generate a single combined chart card showing all funds' cumulative returns."""
+    datasets = []
+    
+    for i, (code, data) in enumerate(tracked_dict.items()):
+        history = data.get('price_history', [])
+        if len(history) < 2:
+            continue
+        color = CHART_COLORS[i % len(CHART_COLORS)]
+        datasets.append({
+            "code": code,
+            "labels": [p["date"][-5:] for p in history],
+            "values": [p["cum_return_pct"] for p in history],
+            "color": color
+        })
+    
+    if not datasets:
+        return "", ""
+    
+    # Build legend HTML
+    legend_items = []
+    for ds in datasets:
+        legend_items.append(
+            f'<span class="chart-legend-item">'
+            f'<span class="chart-legend-dot" style="background:{ds["color"]};"></span>'
+            f'{ds["code"]}</span>'
+        )
+    legend_html = " ".join(legend_items)
+    
+    chart_card_html = f"""
+    <div class="t-chart-card">
+        <div class="t-chart-header">
+            <span class="t-chart-title">Karşılaştırmalı {period_label} Getiri (%)</span>
+            <div class="t-chart-legend">{legend_html}</div>
+        </div>
+        <div class="t-chart-container">
+            <canvas id="combined-return-chart"></canvas>
+        </div>
+    </div>"""
+    
+    return chart_card_html, datasets
+
+
+def generate_chart_script(datasets):
+    """Generate a <script> block that renders a single combined Chart.js line chart."""
+    if not datasets:
+        return ""
+    
+    import json as _json
+    datasets_json = _json.dumps(datasets, ensure_ascii=False)
+    
+    return f"""
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {{
+    const fundData = {datasets_json};
+    
+    // Merge all unique labels in order
+    const allLabels = [];
+    fundData.forEach(function(fd) {{
+        fd.labels.forEach(function(l) {{
+            if (allLabels.indexOf(l) === -1) allLabels.push(l);
+        }});
+    }});
+    allLabels.sort();
+    
+    const chartDatasets = fundData.map(function(fd) {{
+        const mappedValues = allLabels.map(function(l) {{
+            const idx = fd.labels.indexOf(l);
+            return idx >= 0 ? fd.values[idx] : null;
+        }});
+        return {{
+            label: fd.code,
+            data: mappedValues,
+            borderColor: fd.color,
+            backgroundColor: 'transparent',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            fill: false,
+            tension: 0.3,
+            spanGaps: true
+        }};
+    }});
+    
+    const ctx = document.getElementById('combined-return-chart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {{
+        type: 'line',
+        data: {{
+            labels: allLabels,
+            datasets: chartDatasets
+        }},
+        options: {{
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {{ mode: 'index', intersect: false }},
+            plugins: {{
+                legend: {{ display: false }},
+                tooltip: {{
+                    backgroundColor: 'rgba(0,0,0,0.85)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    bodyFont: {{ size: 13 }},
+                    callbacks: {{
+                        label: function(ctx) {{
+                            return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + '%';
+                        }}
+                    }}
+                }}
+            }},
+            scales: {{
+                x: {{
+                    ticks: {{ color: 'rgba(255,255,255,0.5)', font: {{ size: 11 }}, maxRotation: 0 }},
+                    grid: {{ color: 'rgba(255,255,255,0.06)' }}
+                }},
+                y: {{
+                    position: 'right',
+                    ticks: {{
+                        color: 'rgba(255,255,255,0.5)',
+                        font: {{ size: 11 }},
+                        callback: function(v) {{ return v.toFixed(1) + '%'; }}
+                    }},
+                    grid: {{ color: 'rgba(255,255,255,0.06)' }}
+                }}
+            }}
+        }}
+    }});
+}});
+</script>"""
+
 
 async def main():
     base_dir = os.path.dirname(__file__)
@@ -309,6 +462,15 @@ async def main():
     inv_out_html = generate_investor_list_html(data.get('top_inv_out', [])) if "inv_out" in sections else ""
 
     tracked_html = generate_tracked_html(data.get('tracked', {}), period_label) if "tracked" in sections else ""
+
+    # Combined chart as SEPARATE section
+    chart_card_html = ""
+    chart_script = ""
+    tracked_data = data.get('tracked', {})
+    if "return_chart" in sections and tracked_data:
+        chart_card_html, chart_datasets = generate_combined_chart_html(tracked_data, period_label)
+        chart_script = generate_chart_script(chart_datasets)
+    
     
     portfolio_diff_html = generate_portfolio_diff_html(data.get('allocation_diffs', {}), config) if "portfolio_diff" in sections else ""
     
@@ -346,7 +508,9 @@ async def main():
     template = template.replace("{{TOP_INV_IN_HTML}}", inv_in_html)
     template = template.replace("{{TOP_INV_OUT_HTML}}", inv_out_html)
     template = template.replace("{{TRACKED_FUNDS_HTML}}", tracked_html)
+    template = template.replace("{{RETURN_CHART_HTML}}", chart_card_html)
     template = template.replace("{{PORTFOLIO_DIFF_HTML}}", portfolio_diff_html)
+    template = template.replace("{{PORTFOLIO_COLS_CLASS}}", "cols-2" if int(config.get("portfolio_diff_cols", 1)) == 2 else "cols-1")
     template = template.replace("{{TOP_GAINERS_HTML}}", top_gainers_html)
     template = template.replace("{{TOP_LOSERS_HTML}}", top_losers_html)
     template = template.replace("{{PREDICTIONS_HTML}}", predictions_html)
@@ -369,7 +533,7 @@ async def main():
     template = template.replace("{{LAYOUT_MODE_CLASS}}", layout_mode_class)
     
     # Conditional Visibility and Positioning
-    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions", "portfolio_diff", "top_gainers", "top_losers"]:
+    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions", "portfolio_diff", "top_gainers", "top_losers", "return_chart"]:
         placeholder_show = f"{{{{SHOW_{s_name.upper()}}}}}"
         placeholder_pos = f"/* POS_{s_name.upper()} */"
         
@@ -421,16 +585,19 @@ async def main():
     # Font size replacements — inject as a <style> block to avoid IDE placeholder corruption
     item_font_size = config.get("item_font_size", 32)
     period_font_size = config.get("period_font_size", 22)
+    tcode_font_size = config.get("tcode_font_size", 38)
     font_style_injection = f"""<style>
 :root {{
     --item-font-size: {item_font_size}px;
     --period-font-size: {period_font_size}px;
+    --tcode-font-size: {tcode_font_size}px;
 }}
 </style>"""
     template = template.replace("</head>", font_style_injection + "\n</head>")
     # Also do string replace as fallback in case placeholders survived
     template = template.replace("{{ITEM_FONT_SIZE}}", str(item_font_size))
     template = template.replace("{{PERIOD_FONT_SIZE}}", str(period_font_size))
+    template = template.replace("{{TCODE_FONT_SIZE}}", str(tcode_font_size))
     
     # Helper to parse "r,c" and generate grid styles
     def get_grid_pos(name):
@@ -454,6 +621,10 @@ async def main():
     # Watermark position is now handled relatively in index.html
     # We clear the placeholder to avoid CSS errors
     template = template.replace("/* POS_WATERMARK */", "")
+
+    # Inject chart script before </body> if charts are enabled
+    if chart_script:
+        template = template.replace("</body>", chart_script + "\n</body>")
 
     with open(output_html_path, "w", encoding="utf-8") as f:
         f.write(template)
@@ -481,6 +652,11 @@ async def main():
         if box:
             await page.set_viewport_size({"width": c_width, "height": int(box['height'])})
         
+        # If charts are present, wait a bit for Chart.js to render
+        if chart_script:
+            import asyncio as _asyncio
+            await _asyncio.sleep(1.5)
+
         await page.screenshot(path=output_img_path)
         await browser.close()
     
