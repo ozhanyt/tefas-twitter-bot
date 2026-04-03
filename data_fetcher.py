@@ -84,6 +84,205 @@ def normalize(s):
         s = s.replace(k, v)
     return s
 
+def build_divergent_signals(results_filtered):
+    signals = []
+
+    for r in results_filtered:
+        flow_pct = float(r.get('flow_pct', 0))
+        return_pct = float(r.get('return_pct', 0))
+        inv_change = int(r.get('inv_change', 0))
+        inv_change_pct = float(r.get('inv_change_pct', 0))
+        candidates = []
+
+        if flow_pct < 0 and return_pct > 0:
+            candidates.append(("flow_down_return_up", "Çıkışa rağmen getiri güçlü", "Çıkış var ama performans pozitif", abs(flow_pct) * 1.4 + abs(return_pct) * 1.1))
+        if flow_pct > 0 and return_pct < 0:
+            candidates.append(("flow_up_return_down", "Girişe rağmen getiri zayıf", "Para girişi var ama performans negatif", abs(flow_pct) * 1.4 + abs(return_pct) * 1.1))
+        if flow_pct < 0 and inv_change > 0:
+            candidates.append(("flow_down_investor_up", "Çıkışa rağmen yatırımcı artıyor", "Para çıkıyor ama yatırımcı sayısı artıyor", abs(flow_pct) * 1.2 + abs(inv_change_pct)))
+        if flow_pct > 0 and inv_change < 0:
+            candidates.append(("flow_up_investor_down", "Girişe rağmen yatırımcı azalıyor", "Para giriyor ama yatırımcı sayısı düşüyor", abs(flow_pct) * 1.2 + abs(inv_change_pct)))
+
+        if not candidates:
+            continue
+
+        signal_key, signal_title, signal_summary, signal_score = max(candidates, key=lambda x: x[3])
+        signals.append({
+            'fund_code': r['fund_code'],
+            'name': r.get('name', ''),
+            'signal_key': signal_key,
+            'signal_title': signal_title,
+            'signal_summary': signal_summary,
+            'signal_score': float(signal_score),
+            'flow_pct': flow_pct,
+            'return_pct': return_pct,
+            'inv_change': inv_change,
+            'inv_change_pct': inv_change_pct,
+            'net_flow': float(r.get('net_flow', 0)),
+            'fund_size': float(r.get('fund_size', 0)),
+            'investors': int(r.get('investors', 0))
+        })
+
+    signals.sort(key=lambda x: x['signal_score'], reverse=True)
+    return signals[:5]
+
+def build_rank_map(results, key):
+    if not results:
+        return {}
+    sorted_results = sorted(results, key=lambda x: x.get(key, 0))
+    total = max(len(sorted_results) - 1, 1)
+    rank_map = {}
+    for idx, item in enumerate(sorted_results):
+        rank_map[item['fund_code']] = (idx / total) * 100
+    return rank_map
+
+def build_momentum_scores(results_filtered):
+    if not results_filtered:
+        return []
+
+    flow_ranks = build_rank_map(results_filtered, 'flow_pct')
+    ret_ranks = build_rank_map(results_filtered, 'return_pct')
+    inv_ranks = build_rank_map(results_filtered, 'inv_change_pct')
+    scores = []
+
+    for r in results_filtered:
+        code = r['fund_code']
+        score = flow_ranks.get(code, 0) * 0.45 + inv_ranks.get(code, 0) * 0.35 + ret_ranks.get(code, 0) * 0.20
+        scores.append({
+            'fund_code': code,
+            'name': r.get('name', ''),
+            'momentum_score': round(score, 2),
+            'flow_pct': float(r.get('flow_pct', 0)),
+            'return_pct': float(r.get('return_pct', 0)),
+            'inv_change_pct': float(r.get('inv_change_pct', 0)),
+            'inv_change': int(r.get('inv_change', 0))
+        })
+
+    scores.sort(key=lambda x: x['momentum_score'], reverse=True)
+    return scores[:5]
+
+def build_crowding_signals(results_filtered):
+    signals = []
+
+    for r in results_filtered:
+        flow_pct = float(r.get('flow_pct', 0))
+        inv_change_pct = float(r.get('inv_change_pct', 0))
+        return_pct = float(r.get('return_pct', 0))
+
+        if flow_pct <= 0 and inv_change_pct <= 0:
+            continue
+
+        crowd_gap = inv_change_pct - flow_pct
+        quiet_gap = flow_pct - inv_change_pct
+
+        if crowd_gap >= 1.0 and inv_change_pct > 0:
+            label = "Kalabal\u0131kla\u015fma"
+            summary = "Yat\u0131r\u0131mc\u0131 art\u0131\u015f\u0131 para giri\u015finden h\u0131zl\u0131"
+            signal_score = crowd_gap + max(inv_change_pct, 0) * 0.35
+        elif quiet_gap >= 1.0 and flow_pct > 0:
+            label = "Sakin Birikim"
+            summary = "Para giri\u015fi yat\u0131r\u0131mc\u0131 art\u0131\u015f\u0131ndan g\u00fc\u00e7l\u00fc"
+            signal_score = quiet_gap + max(flow_pct, 0) * 0.35
+        else:
+            continue
+
+        signals.append({
+            'fund_code': r['fund_code'],
+            'name': r.get('name', ''),
+            'signal_title': label,
+            'signal_summary': summary,
+            'signal_score': round(signal_score, 2),
+            'flow_pct': flow_pct,
+            'return_pct': return_pct,
+            'inv_change_pct': inv_change_pct
+        })
+
+    signals.sort(key=lambda x: x['signal_score'], reverse=True)
+    return signals[:5]
+
+def build_category_rotation(cat_list):
+    rotations = []
+
+    for c in cat_list:
+        flow_pct = float(c.get('flow_pct', 0))
+        net_flow = float(c.get('net_flow', 0))
+        if abs(flow_pct) < 0.05:
+            continue
+        rotations.append({
+            'category': c.get('fund_code', ''),
+            'signal_title': "Rotasyon G\u00fc\u00e7leniyor" if flow_pct > 0 else "Rotasyon Zay\u0131fl\u0131yor",
+            'signal_summary': "Kategoriye para giri\u015fi var" if flow_pct > 0 else "Kategoriden para \u00e7\u0131k\u0131\u015f\u0131 var",
+            'flow_pct': flow_pct,
+            'net_flow': net_flow,
+            'rotation_score': round(abs(flow_pct), 2)
+        })
+
+    rotations.sort(key=lambda x: x['rotation_score'], reverse=True)
+    return rotations[:5]
+
+def build_relative_strength(tracked_data):
+    if not tracked_data:
+        return []
+
+    returns = [float(v.get('period_return_pct', 0)) for v in tracked_data.values()]
+    avg_return = sum(returns) / len(returns) if returns else 0
+    ranked = []
+
+    for code, item in tracked_data.items():
+        rel = float(item.get('period_return_pct', 0)) - avg_return
+        ranked.append({
+            'fund_code': code,
+            'name': item.get('name', ''),
+            'period_return_pct': float(item.get('period_return_pct', 0)),
+            'relative_strength': round(rel, 2),
+            'period_flow_pct': float(item.get('period_flow_pct', 0)),
+            'signal_title': "Grup \u00fcst\u00fc" if rel >= 0 else "Grup alt\u0131",
+            'signal_summary': "Takip listesinin ortalamas\u0131na g\u00f6re"
+        })
+
+    ranked.sort(key=lambda x: x['relative_strength'], reverse=True)
+    return ranked
+
+def build_manager_actions(allocation_diffs, tracked_data=None):
+    if not allocation_diffs:
+        return []
+    tracked_data = tracked_data or {}
+
+    risk_assets = ("Hisse Senedi", "Gayrimenkul Yat\u0131r\u0131m Fonu", "Giri\u015fim Sermayesi Yat\u0131r\u0131m Fonu")
+    defensive_assets = ("Repo", "Para Piyasas\u0131", "Mevduat", "Nakit Teminat")
+    actions = []
+
+    for code, item in allocation_diffs.items():
+        allocations = item.get('allocations', [])
+        if not allocations:
+            continue
+        top_inc = max(allocations, key=lambda x: x.get('diff', 0))
+        top_dec = min(allocations, key=lambda x: x.get('diff', 0))
+        risk_delta = sum(float(a.get('diff', 0)) for a in allocations if any(k in a.get('asset', '') for k in risk_assets))
+        defensive_delta = sum(float(a.get('diff', 0)) for a in allocations if any(k in a.get('asset', '') for k in defensive_assets))
+
+        if risk_delta > 0.2 and defensive_delta < -0.2:
+            title = "Risk art\u0131r\u0131yor"
+        elif risk_delta < -0.2 and defensive_delta > 0.2:
+            title = "Defansifle\u015fiyor"
+        else:
+            title = "Portf\u00f6y ayar\u0131 yap\u0131yor"
+
+        actions.append({
+            'fund_code': code,
+            'name': tracked_data.get(code, {}).get('name', ''),
+            'signal_title': title,
+            'signal_summary': f"Artan: {top_inc.get('asset', '')} | Azalan: {top_dec.get('asset', '')}",
+            'top_increase_asset': top_inc.get('asset', ''),
+            'top_increase_diff': float(top_inc.get('diff', 0)),
+            'top_decrease_asset': top_dec.get('asset', ''),
+            'top_decrease_diff': float(top_dec.get('diff', 0)),
+            'risk_delta': round(risk_delta, 2),
+            'defensive_delta': round(defensive_delta, 2)
+        })
+
+    return actions
+
 def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     logging.info(f"Screening funds for {period_type} period (Sort: {sort_mode})...")
     
@@ -185,6 +384,9 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     losers = sorted([r for r in valid_returns if r.get('return_pct', 0) < 0], key=lambda x: x['return_pct'])
     top_gainers = gainers[:5]
     top_losers = losers[:5]
+    divergent_signals = build_divergent_signals(results_filtered)
+    momentum_scores = build_momentum_scores(results_filtered)
+    crowding_signals = build_crowding_signals(results_filtered)
 
     # Category flows
     cat_flows = {}
@@ -202,6 +404,7 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
     cat_list = list(cat_flows.values())
     cat_list_in = sorted([c for c in cat_list if c['net_flow'] > 0], key=lambda x: x['net_flow'], reverse=True)[:5]
     cat_list_out = sorted([c for c in cat_list if c['net_flow'] < 0], key=lambda x: x['net_flow'])[:5]
+    category_rotation = build_category_rotation(cat_list)
     
     # Footer
     if selected_cats:
@@ -211,7 +414,7 @@ def fetch_all_flows(period_type, selected_cats=None, sort_mode='tl'):
         footer_detail = "Para Piyasası ve Döviz fonları hariç tutulmuştur."
     footer_note = f"* Veriler TEFAS üzerinden alınmıştır. {footer_detail}"
     
-    return top_inflows, top_outflows, cat_list_in, cat_list_out, top_inv_in, top_inv_out, top_gainers, top_losers, footer_note
+    return top_inflows, top_outflows, cat_list_in, cat_list_out, top_inv_in, top_inv_out, top_gainers, top_losers, divergent_signals, momentum_scores, crowding_signals, category_rotation, footer_note
 
 def fetch_tracked_funds(tracked_codes, period_type):
     tracked_data = {}
@@ -341,7 +544,7 @@ if __name__ == "__main__":
     if not tracked_codes: tracked_codes = ['TLY', 'DFI', 'PHE']
         
     tracked_data = fetch_tracked_funds(tracked_codes, args.period)
-    top_inflows, top_outflows, top_cat_in, top_cat_out, top_inv_in, top_inv_out, top_gainers, top_losers, footer_note = fetch_all_flows(args.period, selected_cats, args.sort)
+    top_inflows, top_outflows, top_cat_in, top_cat_out, top_inv_in, top_inv_out, top_gainers, top_losers, divergent_signals, momentum_scores, crowding_signals, category_rotation, footer_note = fetch_all_flows(args.period, selected_cats, args.sort)
     
     # Fetch allocation diffs for all tracked funds
     allocation_diffs = {}
@@ -349,6 +552,9 @@ if __name__ == "__main__":
         diff_data = fetch_allocation_diff(code)
         if diff_data:
             allocation_diffs[code] = diff_data
+
+    tracked_relative_strength = build_relative_strength(tracked_data)
+    manager_actions = build_manager_actions(allocation_diffs, tracked_data)
     
     output = {
         'date': datetime.now().strftime("%Y-%m-%d"),
@@ -362,8 +568,14 @@ if __name__ == "__main__":
         'top_inv_out': top_inv_out,
         'top_gainers': top_gainers,
         'top_losers': top_losers,
+        'divergent_signals': divergent_signals,
+        'momentum_scores': momentum_scores,
+        'crowding_signals': crowding_signals,
+        'category_rotation': category_rotation,
         'tracked': tracked_data,
+        'tracked_relative_strength': tracked_relative_strength,
         'allocation_diffs': allocation_diffs,
+        'manager_actions': manager_actions,
         'footer_note': footer_note
     }
     

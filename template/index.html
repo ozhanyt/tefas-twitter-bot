@@ -433,6 +433,41 @@
             font-weight: 800;
         }
 
+        .signal-item .f-right {
+            gap: 1px;
+        }
+
+        .signal-code-row {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .signal-fund-name {
+            font-size: calc(var(--item-font-size) * 0.42);
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.58);
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            text-transform: uppercase;
+        }
+
+        .signal-meta {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: calc(var(--item-font-size) * 0.62);
+            font-weight: 700;
+            opacity: 0.95;
+        }
+
+        .signal-item .signal-meta + .signal-meta {
+            margin-top: 2px;
+        }
+
         .trend-up {
             color: #30D158;
         }
@@ -619,6 +654,13 @@
         .t-val-sub.trend-down {
             font-size: calc(var(--item-font-size) * 0.55) !important;
             font-weight: 600;
+        }
+
+        .t-val-total {
+            font-size: calc(var(--item-font-size) * 0.55) !important;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.78);
+            white-space: nowrap;
         }
 
         .t-chart-card {
@@ -847,6 +889,39 @@
                 <ul class="fund-list">{{TOP_INV_OUT_HTML}}</ul>
             </div>
 
+            <!-- divergent -->
+            <div class="card glass-card divergent {{SHOW_DIVERGENT}}" style="/* POS_DIVERGENT */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(255,255,255,0.1); color:#fff;">🧭</div>
+                    <h2>Ayrışan Fonlar <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{DIVERGENT_HTML}}</ul>
+            </div>
+
+            <div class="card glass-card momentum {{SHOW_MOMENTUM}}" style="/* POS_MOMENTUM */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(48,209,88,0.16); color:#30D158;">⚡</div>
+                    <h2>Akıllı Skor <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{MOMENTUM_HTML}}</ul>
+            </div>
+
+            <div class="card glass-card crowding {{SHOW_CROWDING}}" style="/* POS_CROWDING */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(10,132,255,0.16); color:#0A84FF;">👥</div>
+                    <h2>Kalabalıklaşma / Sakin Birikim <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{CROWDING_HTML}}</ul>
+            </div>
+
+            <div class="card glass-card category-rotation {{SHOW_CATEGORY_ROTATION}}" style="/* POS_CATEGORY_ROTATION */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(255,255,255,0.1); color:#fff;">🔄</div>
+                    <h2>Kategori Rotasyonu <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{CATEGORY_ROTATION_HTML}}</ul>
+            </div>
+
             <div class="card glass-card predictions {{SHOW_PREDICTIONS}}" style="/* POS_PREDICTIONS */">
                 <div class="card-header">
                     <div style="display:flex; align-items:center; gap:20px;">
@@ -881,6 +956,22 @@
             <div class="card glass-card portfolio-diff {{SHOW_PORTFOLIO_DIFF}}" style="/* POS_PORTFOLIO_DIFF */">
                 <div class="card-header" style="display:none;"></div>
                 <ul class="fund-list">{{PORTFOLIO_DIFF_HTML}}</ul>
+            </div>
+
+            <div class="card glass-card tracked-rs {{SHOW_TRACKED_RS}}" style="/* POS_TRACKED_RS */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(10,132,255,0.16); color:#0A84FF;">📏</div>
+                    <h2>Göreceli Güç <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{TRACKED_RS_HTML}}</ul>
+            </div>
+
+            <div class="card glass-card manager-actions {{SHOW_MANAGER_ACTIONS}}" style="/* POS_MANAGER_ACTIONS */">
+                <div class="card-header">
+                    <div class="header-icon inflow-icon" style="background:rgba(255,159,10,0.18); color:#FF9F0A;">🧠</div>
+                    <h2>Yönetici Hamlesi Özeti <span class="period-label">{{PERIOD_NOTE}}</span></h2>
+                </div>
+                <ul class="fund-list">{{MANAGER_ACTIONS_HTML}}</ul>
             </div>
         </div>
 

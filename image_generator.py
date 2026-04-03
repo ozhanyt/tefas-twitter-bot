@@ -196,6 +196,173 @@ def generate_top_returns_html(funds, is_gainer=True):
         """
     return html
 
+def generate_divergent_signals_html(signals):
+    html = ""
+    for s in signals:
+        ret = s.get('return_pct', 0)
+        flow = s.get('flow_pct', 0)
+        inv_pct = s.get('inv_change_pct', 0)
+        ret_class = "trend-up" if ret >= 0 else "trend-down"
+        flow_class = "trend-up" if flow >= 0 else "trend-down"
+        inv_class = "trend-up" if inv_pct >= 0 else "trend-down"
+        ret_str = f"{'+' if ret >= 0 else ''}{format_pct(ret, 2)}"
+        flow_str = f"Para Giri\u015f/\u00c7\u0131k\u0131\u015f\u0131 {'+' if flow >= 0 else ''}{format_pct(flow, 2)}"
+        flow_str = f"Para Giriş/Çıkışı {'+' if flow >= 0 else ''}{format_pct(flow, 2)}"
+        inv_str = f"Yat. {'+' if inv_pct >= 0 else ''}{format_pct(inv_pct, 2)}"
+
+        html += f"""
+        <li class="fund-item signal-item">
+            <div class="f-left">
+                <div class="signal-code-row">
+                    <span class="f-code">{s.get('fund_code', '')}</span>
+                    <span class="signal-fund-name">{s.get('name', '')}</span>
+                </div>
+                <span class="f-name">{s.get('signal_title', '')}</span>
+            </div>
+            <div class="f-right">
+                <span class="f-val {ret_class}">{ret_str}</span>
+                <span class="f-pct {flow_class}">{flow_str}</span>
+                <span class="signal-meta {inv_class}">{inv_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
+def generate_momentum_scores_html(items):
+    html = ""
+    for s in items:
+        score = s.get('momentum_score', 0)
+        score_class = "trend-up" if score >= 50 else "trend-down"
+        score_str = f"Skor {score:.1f}".replace(".", ",")
+        flow_str = f"Para Giriş/Çıkışı {'+' if s.get('flow_pct', 0) >= 0 else ''}{format_pct(s.get('flow_pct', 0), 2)}"
+        meta_str = f"Getiri {'+' if s.get('return_pct', 0) >= 0 else ''}{format_pct(s.get('return_pct', 0), 2)} | Yat. {'+' if s.get('inv_change_pct', 0) >= 0 else ''}{format_pct(s.get('inv_change_pct', 0), 2)}"
+        flow_class = "trend-up" if s.get('flow_pct', 0) >= 0 else "trend-down"
+
+        html += f"""
+        <li class="fund-item signal-item">
+            <div class="f-left">
+                <div class="signal-code-row">
+                    <span class="f-code">{s.get('fund_code', '')}</span>
+                    <span class="signal-fund-name">{s.get('name', '')}</span>
+                </div>
+                <span class="f-name">Akıllı Momentum Skoru</span>
+            </div>
+            <div class="f-right">
+                <span class="f-val {score_class}">{score_str}</span>
+                <span class="f-pct {flow_class}">{flow_str}</span>
+                <span class="signal-meta">{meta_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
+def generate_crowding_signals_html(items):
+    html = ""
+    for s in items:
+        flow_class = "trend-up" if s.get('flow_pct', 0) >= 0 else "trend-down"
+        inv_class = "trend-up" if s.get('inv_change_pct', 0) >= 0 else "trend-down"
+        ret_class = "trend-up" if s.get('return_pct', 0) >= 0 else "trend-down"
+        ret_str = f"{'+' if s.get('return_pct', 0) >= 0 else ''}{format_pct(s.get('return_pct', 0), 2)}"
+        flow_str = f"Para Giriş/Çıkışı {'+' if s.get('flow_pct', 0) >= 0 else ''}{format_pct(s.get('flow_pct', 0), 2)}"
+        inv_str = f"Yat. {'+' if s.get('inv_change_pct', 0) >= 0 else ''}{format_pct(s.get('inv_change_pct', 0), 2)}"
+
+        html += f"""
+        <li class="fund-item signal-item">
+            <div class="f-left">
+                <div class="signal-code-row">
+                    <span class="f-code">{s.get('fund_code', '')}</span>
+                    <span class="signal-fund-name">{s.get('name', '')}</span>
+                </div>
+                <span class="f-name">{s.get('signal_title', '')}</span>
+            </div>
+            <div class="f-right">
+                <span class="f-val {ret_class}">{ret_str}</span>
+                <span class="f-pct {flow_class}">{flow_str}</span>
+                <span class="signal-meta {inv_class}">{inv_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
+def generate_category_rotation_html(items):
+    html = ""
+    for s in items:
+        flow_class = "trend-up" if s.get('flow_pct', 0) >= 0 else "trend-down"
+        flow_str = f"{'+' if s.get('flow_pct', 0) >= 0 else ''}{format_pct(s.get('flow_pct', 0), 2)}"
+        money_str = format_money(s.get('net_flow', 0))
+
+        html += f"""
+        <li class="fund-item signal-item">
+            <div class="f-left">
+                <div class="signal-code-row">
+                    <span class="f-code">KATEGORİ</span>
+                    <span class="signal-fund-name">{s.get('category', '')}</span>
+                </div>
+                <span class="f-name">{s.get('signal_title', '')}</span>
+            </div>
+            <div class="f-right">
+                <span class="f-val {flow_class}">{flow_str}</span>
+                <span class="signal-meta {flow_class}">{money_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
+def generate_relative_strength_html(items):
+    html = ""
+    for s in items:
+        rs = s.get('relative_strength', 0)
+        rs_class = "trend-up" if rs >= 0 else "trend-down"
+        rs_str = f"{'+' if rs >= 0 else ''}{str(f'{rs:.2f}').replace('.', ',')} puan"
+        ret_str = f"Getiri {'+' if s.get('period_return_pct', 0) >= 0 else ''}{format_pct(s.get('period_return_pct', 0), 2)}"
+        flow_str = f"Para Giriş/Çıkışı {'+' if s.get('period_flow_pct', 0) >= 0 else ''}{format_pct(s.get('period_flow_pct', 0), 2)}"
+        flow_class = "trend-up" if s.get('period_flow_pct', 0) >= 0 else "trend-down"
+
+        html += f"""
+        <li class="fund-item signal-item">
+            <div class="f-left">
+                <div class="signal-code-row">
+                    <span class="f-code">{s.get('fund_code', '')}</span>
+                    <span class="signal-fund-name">{s.get('name', '')}</span>
+                </div>
+                <span class="f-name">{s.get('signal_title', '')}</span>
+            </div>
+            <div class="f-right">
+                <span class="f-val {rs_class}">{rs_str}</span>
+                <span class="f-pct {rs_class}">{ret_str}</span>
+                <span class="signal-meta {flow_class}">{flow_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
+def generate_manager_actions_html(items):
+    html = ""
+    for s in items:
+        top_inc = s.get('top_increase_diff', 0)
+        top_dec = s.get('top_decrease_diff', 0)
+        inc_class = "trend-up" if top_inc >= 0 else "trend-down"
+        dec_class = "trend-up" if top_dec >= 0 else "trend-down"
+        inc_str = f"{s.get('top_increase_asset', '')} ({'+' if top_inc >= 0 else ''}{str(f'{top_inc:.2f}').replace('.', ',')})"
+        dec_str = f"{s.get('top_decrease_asset', '')} ({str(f'{top_dec:.2f}').replace('.', ',')})"
+
+        html += f"""
+        <li class="fund-item signal-item">
+            <div class="f-left">
+                <div class="signal-code-row">
+                    <span class="f-code">{s.get('fund_code', '')}</span>
+                    <span class="signal-fund-name">{s.get('name', '')}</span>
+                </div>
+                <span class="f-name">{s.get('signal_title', '')}</span>
+            </div>
+            <div class="f-right">
+                <span class="signal-meta {inc_class}">{inc_str}</span>
+                <span class="signal-meta {dec_class}">{dec_str}</span>
+            </div>
+        </li>
+        """
+    return html
+
 def generate_tracked_html(tracked_dict, period_label, show_chart=False):
     html = ""
     for code, data in tracked_dict.items():
@@ -204,6 +371,7 @@ def generate_tracked_html(tracked_dict, period_label, show_chart=False):
         p_ret = data.get('period_return_pct', 0)
         inv_change = data.get('period_investor_change', 0)
         inv_pct = data.get('period_investor_pct', 0)
+        current_investors = int(data.get('investors', 0) or 0)
         total_size = data.get('fund_size', 0)
         flow_pct = data.get('period_flow_pct', 0)
 
@@ -218,6 +386,7 @@ def generate_tracked_html(tracked_dict, period_label, show_chart=False):
         inv_str = f"{inv_change:+d} Kişi"
         inv_class = "trend-up" if inv_change >= 0 else "trend-down"
         inv_pct_str = f"({'+' if inv_pct >= 0 else ''}{format_pct(inv_pct)})"
+        current_inv_str = f"{current_investors:,.0f}".replace(",", ".")
         
         size_str = '₺' + f"{total_size:,.0f}".replace(",", ".")
         
@@ -246,6 +415,7 @@ def generate_tracked_html(tracked_dict, period_label, show_chart=False):
                     <div class="t-values-row">
                         <span class="t-val-main {inv_class}">{inv_str}</span>
                         <span class="t-val-sub {inv_class}">{inv_pct_str}</span>
+                        <span class="t-val-sub t-val-total">Mevcut: {current_inv_str}</span>
                     </div>
                 </div>
                 <div class="t-stat-block">
@@ -422,8 +592,14 @@ async def main():
             "outflows": "1,2",
             "cat_in": "2,1",
             "cat_out": "2,2",
-            "tracked": "3,1",
-            "predictions": "4,1"
+            "divergent": "3,1",
+            "momentum": "3,2",
+            "crowding": "4,1",
+            "category_rotation": "4,2",
+            "tracked": "5,1",
+            "tracked_rs": "5,2",
+            "manager_actions": "6,1",
+            "predictions": "7,1"
         },
         "predictions": []
     }
@@ -460,8 +636,14 @@ async def main():
     
     inv_in_html = generate_investor_list_html(data.get('top_inv_in', [])) if "inv_in" in sections else ""
     inv_out_html = generate_investor_list_html(data.get('top_inv_out', [])) if "inv_out" in sections else ""
+    divergent_html = generate_divergent_signals_html(data.get('divergent_signals', [])) if "divergent" in sections else ""
+    momentum_html = generate_momentum_scores_html(data.get('momentum_scores', [])) if "momentum" in sections else ""
+    crowding_html = generate_crowding_signals_html(data.get('crowding_signals', [])) if "crowding" in sections else ""
+    category_rotation_html = generate_category_rotation_html(data.get('category_rotation', [])) if "category_rotation" in sections else ""
 
     tracked_html = generate_tracked_html(data.get('tracked', {}), period_label) if "tracked" in sections else ""
+    tracked_rs_html = generate_relative_strength_html(data.get('tracked_relative_strength', [])) if "tracked_rs" in sections else ""
+    manager_actions_html = generate_manager_actions_html(data.get('manager_actions', [])) if "manager_actions" in sections else ""
 
     # Combined chart as SEPARATE section
     chart_card_html = ""
@@ -507,7 +689,13 @@ async def main():
     template = template.replace("{{TOP_CAT_OUT_HTML}}", cat_out_html)
     template = template.replace("{{TOP_INV_IN_HTML}}", inv_in_html)
     template = template.replace("{{TOP_INV_OUT_HTML}}", inv_out_html)
+    template = template.replace("{{DIVERGENT_HTML}}", divergent_html)
+    template = template.replace("{{MOMENTUM_HTML}}", momentum_html)
+    template = template.replace("{{CROWDING_HTML}}", crowding_html)
+    template = template.replace("{{CATEGORY_ROTATION_HTML}}", category_rotation_html)
     template = template.replace("{{TRACKED_FUNDS_HTML}}", tracked_html)
+    template = template.replace("{{TRACKED_RS_HTML}}", tracked_rs_html)
+    template = template.replace("{{MANAGER_ACTIONS_HTML}}", manager_actions_html)
     template = template.replace("{{RETURN_CHART_HTML}}", chart_card_html)
     template = template.replace("{{PORTFOLIO_DIFF_HTML}}", portfolio_diff_html)
     template = template.replace("{{PORTFOLIO_COLS_CLASS}}", "cols-2" if int(config.get("portfolio_diff_cols", 1)) == 2 else "cols-1")
@@ -533,7 +721,7 @@ async def main():
     template = template.replace("{{LAYOUT_MODE_CLASS}}", layout_mode_class)
     
     # Conditional Visibility and Positioning
-    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "tracked", "predictions", "portfolio_diff", "top_gainers", "top_losers", "return_chart"]:
+    for s_name in ["inflows", "outflows", "cat_in", "cat_out", "inv_in", "inv_out", "divergent", "momentum", "crowding", "category_rotation", "tracked", "tracked_rs", "manager_actions", "predictions", "portfolio_diff", "top_gainers", "top_losers", "return_chart"]:
         placeholder_show = f"{{{{SHOW_{s_name.upper()}}}}}"
         placeholder_pos = f"/* POS_{s_name.upper()} */"
         
@@ -612,7 +800,13 @@ async def main():
     template = template.replace("/* POS_CAT_OUT */", get_grid_pos("cat_out"))
     template = template.replace("/* POS_INV_IN */", get_grid_pos("inv_in"))
     template = template.replace("/* POS_INV_OUT */", get_grid_pos("inv_out"))
+    template = template.replace("/* POS_DIVERGENT */", get_grid_pos("divergent"))
+    template = template.replace("/* POS_MOMENTUM */", get_grid_pos("momentum"))
+    template = template.replace("/* POS_CROWDING */", get_grid_pos("crowding"))
+    template = template.replace("/* POS_CATEGORY_ROTATION */", get_grid_pos("category_rotation"))
     template = template.replace("/* POS_TRACKED */", get_grid_pos("tracked"))
+    template = template.replace("/* POS_TRACKED_RS */", get_grid_pos("tracked_rs"))
+    template = template.replace("/* POS_MANAGER_ACTIONS */", get_grid_pos("manager_actions"))
     template = template.replace("/* POS_PREDICTIONS */", get_grid_pos("predictions"))
     template = template.replace("/* POS_PORTFOLIO_DIFF */", get_grid_pos("portfolio_diff"))
     template = template.replace("/* POS_TOP_GAINERS */", get_grid_pos("top_gainers"))

@@ -254,6 +254,90 @@ def tweet_top_returns(data, period):
     return "\n".join(lines)
 
 
+def tweet_divergent_signals(data, period):
+    signals = data.get("divergent_signals", [])[:3]
+    date = tr_date(data["date"])
+    lbl = PERIOD_LABEL.get(period, "Günlük")
+
+    lines = [f"🧭 TEFAS {lbl} Ayrışan Fonlar — {date}\n"]
+
+    for i, s in enumerate(signals, 1):
+        ret = fmt_pct(s.get("return_pct", 0))
+        flow = fmt_pct(s.get("flow_pct", 0))
+        inv = fmt_pct(s.get("inv_change_pct", 0))
+        lines.append(f"  {i}. #{s['fund_code']}  {s.get('signal_title', '')}")
+        lines.append(f"     Getiri {ret} | Para Giriş/Çıkışı {flow} | Yat. {inv}")
+
+    lines.append("\n📈 Detaylar görselde ↓")
+    lines.append("#TEFAS #FonYatırımı #Borsa #Yatırım")
+    return "\n".join(lines)
+
+
+def tweet_momentum_scores(data, period):
+    items = data.get("momentum_scores", [])[:3]
+    date = tr_date(data["date"])
+    lbl = PERIOD_LABEL.get(period, "G\u00fcnl\u00fck")
+    lines = [f"\u26a1 TEFAS {lbl} Ak\u0131ll\u0131 Skor - {date}\n"]
+    for i, s in enumerate(items, 1):
+        lines.append(f"  {i}. #{s['fund_code']}  Skor {s.get('momentum_score', 0):.1f}")
+        lines.append(f"     Getiri {fmt_pct(s.get('return_pct', 0))} | Para Giri\u015f/\u00c7\u0131k\u0131\u015f\u0131 {fmt_pct(s.get('flow_pct', 0))}")
+    lines.append("\nNot: Akıllı Skor; para girişi/çıkışı, yatırımcı değişimi ve getiri verilerinin ağırlıklı birleşiminden oluşan göreceli momentum puanıdır.")
+    lines.append("\n#TEFAS #FonYat\u0131r\u0131m\u0131 #Borsa")
+    return "\n".join(lines)
+
+def tweet_crowding_signals(data, period):
+    items = data.get("crowding_signals", [])[:3]
+    date = tr_date(data["date"])
+    lbl = PERIOD_LABEL.get(period, "G\u00fcnl\u00fck")
+    lines = [f"\U0001f465 TEFAS {lbl} Kalabal\u0131kla\u015fma / Sakin Birikim - {date}\n"]
+    for i, s in enumerate(items, 1):
+        lines.append(f"  {i}. #{s['fund_code']}  {s.get('signal_title', '')}")
+        lines.append(f"     Para Giri\u015f/\u00c7\u0131k\u0131\u015f\u0131 {fmt_pct(s.get('flow_pct', 0))} | Yat. {fmt_pct(s.get('inv_change_pct', 0))}")
+    lines.append("\nNot: Bu bölüm, para hareketi ile yatırımcı artışının aynı hızda gitmediği fonları gösterir; yatırımcı artışı öndeyse kalabalıklaşma, para girişi öndeyse sakin birikim sinyali oluşur.")
+    lines.append("\n#TEFAS #FonYat\u0131r\u0131m\u0131 #Borsa")
+    return "\n".join(lines)
+
+def tweet_category_rotation(data, period):
+    items = data.get("category_rotation", [])[:3]
+    date = tr_date(data["date"])
+    lbl = PERIOD_LABEL.get(period, "G\u00fcnl\u00fck")
+    lines = [f"\U0001f504 TEFAS {lbl} Kategori Rotasyonu - {date}\n"]
+    for i, s in enumerate(items, 1):
+        lines.append(f"  {i}. {s.get('category', '')}  {fmt_pct(s.get('flow_pct', 0))}")
+        lines.append(f"     {s.get('signal_title', '')}")
+    lines.append("\nNot: Kategori Rotasyonu, paranın hangi fon temalarına yöneldiğini ve hangi temalardan çıktığını gösteren özet akımdır.")
+    lines.append("\n#TEFAS #FonYat\u0131r\u0131m\u0131 #Borsa")
+    return "\n".join(lines)
+
+def tweet_tracked_relative_strength(data, period):
+    items = data.get("tracked_relative_strength", [])[:4]
+    date = tr_date(data["date"])
+    lbl = PERIOD_LABEL.get(period, "G\u00fcnl\u00fck")
+    lines = [f"\U0001f4cf TEFAS {lbl} G\u00f6receli G\u00fc\u00e7 - {date}\n"]
+    for i, s in enumerate(items, 1):
+        rel = s.get('relative_strength', 0)
+        rel_text = f"{'+' if rel >= 0 else ''}{rel:.2f}".replace(".", ",")
+        lines.append(f"  {i}. #{s['fund_code']}  {rel_text} puan")
+        lines.append(f"     Getiri {fmt_pct(s.get('period_return_pct', 0))}")
+    lines.append("\nNot: Göreceli Güç, takipli fonun aynı listedeki diğer fonların ortalama performansına göre ne kadar güçlü ya da zayıf kaldığını gösterir.")
+    lines.append("\n#TEFAS #FonYat\u0131r\u0131m\u0131 #Borsa")
+    return "\n".join(lines)
+
+def tweet_manager_actions(data, period):
+    items = data.get("manager_actions", [])[:3]
+    date = tr_date(data["date"])
+    lbl = PERIOD_LABEL.get(period, "G\u00fcnl\u00fck")
+    lines = [f"\U0001f9e0 TEFAS {lbl} Y\u00f6netici Hamlesi \u00d6zeti - {date}\n"]
+    for i, s in enumerate(items, 1):
+        inc = f"{s.get('top_increase_diff', 0):+.2f}".replace(".", ",")
+        dec = f"{s.get('top_decrease_diff', 0):+.2f}".replace(".", ",")
+        lines.append(f"  {i}. #{s['fund_code']}  {s.get('signal_title', '')}")
+        lines.append(f"     {s.get('top_increase_asset', '')} {inc} | {s.get('top_decrease_asset', '')} {dec}")
+    lines.append("\nNot: Yönetici Hamlesi Özeti, portföy dağılımındaki en belirgin artış ve azalışları özetleyerek fon yöneticisinin risk artırıp azaltmadığını hızlıca gösterir.")
+    lines.append("\n#TEFAS #FonYat\u0131r\u0131m\u0131 #Borsa")
+    return "\n".join(lines)
+
+
 # ─── Main Tweet Builder ───────────────────────────────────────────────────────
 
 def generate_tweet_text(data, sections, config=None):
@@ -277,6 +361,24 @@ def generate_tweet_text(data, sections, config=None):
     if has("tracked") and len(sections) == 1:
         return tweet_tracked(data, period)
 
+    if has("divergent") and len(sections) == 1:
+        return tweet_divergent_signals(data, period)
+
+    if has("momentum") and len(sections) == 1:
+        return tweet_momentum_scores(data, period)
+
+    if has("crowding") and len(sections) == 1:
+        return tweet_crowding_signals(data, period)
+
+    if has("category_rotation") and len(sections) == 1:
+        return tweet_category_rotation(data, period)
+
+    if has("tracked_rs") and len(sections) == 1:
+        return tweet_tracked_relative_strength(data, period)
+
+    if has("manager_actions") and len(sections) == 1:
+        return tweet_manager_actions(data, period)
+
     if (has("top_gainers") or has("top_losers")) and not has("inflows") and not has("outflows") and not has("cat_in") and not has("cat_out") and not has("inv_in") and not has("inv_out"):
         return tweet_top_returns(data, period)
 
@@ -297,6 +399,24 @@ def generate_tweet_text(data, sections, config=None):
     # ==========================
     if has("portfolio_diff"):
         return tweet_allocation_diff(data, config)
+
+    if has("divergent"):
+        return tweet_divergent_signals(data, period)
+
+    if has("momentum"):
+        return tweet_momentum_scores(data, period)
+
+    if has("crowding"):
+        return tweet_crowding_signals(data, period)
+
+    if has("category_rotation"):
+        return tweet_category_rotation(data, period)
+
+    if has("tracked_rs"):
+        return tweet_tracked_relative_strength(data, period)
+
+    if has("manager_actions"):
+        return tweet_manager_actions(data, period)
 
     if has("top_gainers") or has("top_losers"):
         return tweet_top_returns(data, period)
